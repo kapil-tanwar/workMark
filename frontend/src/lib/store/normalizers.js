@@ -20,6 +20,7 @@ export function normLeave(l) {
     type: l.type,
     startDate: l.startDate,
     endDate: l.endDate,
+    duration: l.duration || "full",
     reason: l.reason,
     status: l.status,
     appliedAt: l.createdAt || l.appliedAt,

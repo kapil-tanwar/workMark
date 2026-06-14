@@ -99,13 +99,15 @@ export async function submitLeave(input) {
     cache.leaves.filter((l) => l.userId === input.userId),
     input.type,
     input.startDate,
-    input.endDate
+    input.endDate,
+    input.duration || "full"
   );
   if (!check.ok) throw new Error(check.message);
   const leave = await api.createLeave({
     type: input.type,
     startDate: input.startDate,
     endDate: input.endDate,
+    duration: input.duration || "full",
     reason: input.reason,
   });
   cache.leaves.unshift(normLeave(leave));

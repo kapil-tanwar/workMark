@@ -22,13 +22,25 @@ function AdminDashboard() {
   const today = todayISO();
 
   const { present, absent, onLeave } = computeDailyAttendanceStats(employees, leaves, attendance, today);
-  const pending = leaves.filter((l) => l.status === "Pending");
-  const pendingCompOff = store.getCompOffRequests().filter((r) => r.status === "Pending");
+
+  const pendingLeaves = leaves
+    .filter((l) => l.status === "Pending")
+    .map((l) => ({ ...l, kind: "leave" }));
+
+  const pendingCompOff = store
+    .getCompOffRequests()
+    .filter((r) => r.status === "Pending")
+    .map((r) => ({ ...r, kind: "compoff" }));
+
+  const pending = [...pendingLeaves, ...pendingCompOff].sort((a, b) =>
+    (a.appliedAt < b.appliedAt ? 1 : -1)
+  );
+
   const chartData = buildWeeklyChartData(employees, leaves, attendance, lastNDays(7));
 
-  function getUserName(l) {
-    const emp = store.getUsers().find((u) => u.id === l.userId);
-    return l.userName || emp?.name || "Unknown";
+  function getUserName(item) {
+    const emp = store.getUsers().find((u) => u.id === item.userId);
+    return item.userName || emp?.name || "Unknown";
   }
 
   return (
@@ -40,7 +52,7 @@ function AdminDashboard() {
         <StatCard label="Present today" value={present} icon={UserCheck} tone="success" />
         <StatCard label="Absent today" value={absent} icon={UserX} tone="destructive" />
         <StatCard label="On leave" value={onLeave} icon={CalendarOff} tone="info" />
-        <StatCard label="Pending requests" value={pending.length + pendingCompOff.length} icon={FileClock} tone="warning" />
+        <StatCard label="Pending requests" value={pending.length} icon={FileClock} tone="warning" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">

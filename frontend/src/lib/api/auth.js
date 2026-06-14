@@ -23,6 +23,11 @@ export async function fetchMe() {
   return normalizeUser(data.user);
 }
 
+export async function updateProfile(body) {
+  const data = await request("/api/auth/profile", { method: "PATCH", body: JSON.stringify(body) });
+  return normalizeUser(data.user);
+}
+
 export async function forgotPassword(email) {
   return request("/api/auth/forgot-password", {
     method: "POST",

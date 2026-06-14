@@ -27,6 +27,11 @@ export async function runMonthlyEarnedAccrual(forMonth = new Date()) {
   });
 
   for (const emp of employees) {
+    const last = emp.leaveBalances?.lastEarnedAccrualAt
+      ? new Date(emp.leaveBalances.lastEarnedAccrualAt)
+      : null;
+    if (last && last >= accrualDate) continue;
+
     await User.findByIdAndUpdate(emp._id, {
       $inc: { "leaveBalances.earnedTotal": amount },
       $set: { "leaveBalances.lastEarnedAccrualAt": accrualDate },
@@ -35,6 +40,20 @@ export async function runMonthlyEarnedAccrual(forMonth = new Date()) {
 
   await AccrualRun.create({ monthKey: key, amount, employeeCount: employees.length });
   return { skipped: false, monthKey: key, amount, employeeCount: employees.length };
+}
+
+/** Credit current month's earned leave when a new employee joins. */
+export async function creditNewEmployeeEarnedLeave(userId) {
+  const amount = await getMonthlyAccrualAmount();
+  const now = new Date();
+  const accrualDate = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 1);
+
+  await User.findByIdAndUpdate(userId, {
+    $inc: { "leaveBalances.earnedTotal": amount },
+    $set: { "leaveBalances.lastEarnedAccrualAt": accrualDate },
+  });
+
+  return amount;
 }
 
 export async function ensureEarnedAccrualUpToDate() {

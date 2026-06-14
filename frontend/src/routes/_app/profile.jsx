@@ -3,7 +3,19 @@ import { useAuth } from "@/lib/auth-context";
 import { PageHeader } from "@/components/wf-ui";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Mail, Phone, Building2, BadgeCheck, IdCard, KeyRound } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Mail, Phone, Building2, BadgeCheck, IdCard, KeyRound, Pencil } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/profile")({
   head: () => ({ meta: [{ title: "Profile — WorkFlow HR" }] }),
@@ -11,8 +23,52 @@ export const Route = createFileRoute("/_app/profile")({
 });
 
 function ProfilePage() {
-  const { user } = useAuth();
+  const { user, updateProfile } = useAuth();
+  const [editOpen, setEditOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    department: "",
+    designation: "",
+  });
+
   if (!user) return null;
+
+  function openEdit() {
+    setForm({
+      name: user.name || "",
+      email: user.email || "",
+      phone: user.phone || "",
+      department: user.department || "",
+      designation: user.designation || "",
+    });
+    setEditOpen(true);
+  }
+
+  async function handleSave() {
+    if (!form.name.trim() || !form.phone.trim()) {
+      toast.error("Name and phone are required");
+      return;
+    }
+    setSaving(true);
+    try {
+      await updateProfile({
+        name: form.name.trim(),
+        email: form.email.trim(),
+        phone: form.phone.trim(),
+        department: form.department.trim(),
+        designation: form.designation.trim(),
+      });
+      toast.success("Profile updated");
+      setEditOpen(false);
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
 
   const items = [
     { icon: IdCard, label: "Employee ID", value: user.employeeId || "—" },
@@ -44,12 +100,18 @@ function ProfilePage() {
                 {user.designation} · {user.department}
               </p>
             </div>
-            <Button variant="outline" asChild className="shrink-0">
-              <Link to="/forgot-password">
-                <KeyRound className="size-4" />
-                Forgot password?
-              </Link>
-            </Button>
+            <div className="flex flex-wrap gap-2 shrink-0">
+              <Button variant="default" onClick={openEdit}>
+                <Pencil className="size-4" />
+                Edit profile
+              </Button>
+              <Button variant="outline" asChild>
+                <Link to="/forgot-password">
+                  <KeyRound className="size-4" />
+                  Forgot password?
+                </Link>
+              </Button>
+            </div>
           </div>
 
           <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -77,6 +139,45 @@ function ProfilePage() {
           </div>
         </div>
       </div>
+
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit profile</DialogTitle>
+            <DialogDescription>Update your personal and work details. Employee ID cannot be changed here.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label>Full name</Label>
+              <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Email</Label>
+              <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Phone</Label>
+              <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Department</Label>
+              <Input value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Designation</Label>
+              <Input value={form.designation} onChange={(e) => setForm({ ...form, designation: e.target.value })} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSave} disabled={saving}>
+              Save changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
