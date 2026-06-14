@@ -1,5 +1,14 @@
 import mongoose from "mongoose";
 
+const LeaveBalancesSchema = new mongoose.Schema(
+  {
+    earnedTotal: { type: Number, default: 0 },
+    compOffTotal: { type: Number, default: 0 },
+    lastEarnedAccrualAt: { type: Date },
+  },
+  { _id: false }
+);
+
 const UserSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
@@ -11,6 +20,7 @@ const UserSchema = new mongoose.Schema(
     designation: String,
     phone: { type: String, unique: true, sparse: true, index: true },
     active: { type: Boolean, default: true },
+    leaveBalances: { type: LeaveBalancesSchema, default: () => ({}) },
   },
   { timestamps: true }
 );

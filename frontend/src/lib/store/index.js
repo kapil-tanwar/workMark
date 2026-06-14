@@ -1,12 +1,13 @@
 import * as api from "@/lib/api";
 import { computeLeaveBalance, canRequestLeave } from "@/lib/utils/leave-balance";
 import { cache, emitChange } from "./cache";
-import { normAttendance, normLeave } from "./normalizers";
+import { normAttendance, normLeave, normCompOff } from "./normalizers";
 
 export const store = {
   getUsers: () => cache.users,
   getAttendance: () => cache.attendance,
   getLeaves: () => cache.leaves,
+  getCompOffRequests: () => cache.compOffRequests,
   getSettings: () => cache.settings,
   setSettings: async (v) => {
     cache.settings = await api.patchSettings(v);
@@ -14,16 +15,26 @@ export const store = {
   },
 };
 
+function getUserById(userId) {
+  return (
+    cache.users.find((u) => u.id === userId) || {
+      leaveBalances: { earnedTotal: 0, compOffTotal: 0 },
+    }
+  );
+}
+
 export async function refreshStore() {
-  const [users, attendance, leaves, settings] = await Promise.all([
+  const [users, attendance, leaves, compOffRequests, settings] = await Promise.all([
     api.getEmployees(),
     api.getAttendance(),
     api.getLeaves(),
+    api.getCompOffRequests(),
     api.getSettings(),
   ]);
   cache.users = users;
   cache.attendance = attendance.map(normAttendance);
   cache.leaves = leaves.map(normLeave);
+  cache.compOffRequests = compOffRequests.map(normCompOff);
   cache.settings = settings;
   emitChange();
 }
@@ -49,13 +60,15 @@ export function currentMonthCounts(userId) {
 }
 
 export function leaveBalance(userId) {
+  const user = getUserById(userId);
   const leaves = cache.leaves.filter((l) => l.userId === userId);
-  return computeLeaveBalance(leaves, cache.settings.leaveAllocation, { includePending: false });
+  return computeLeaveBalance(user, leaves, { includePending: false });
 }
 
 export function leaveBalanceWithPending(userId) {
+  const user = getUserById(userId);
   const leaves = cache.leaves.filter((l) => l.userId === userId);
-  return computeLeaveBalance(leaves, cache.settings.leaveAllocation, { includePending: true });
+  return computeLeaveBalance(user, leaves, { includePending: true });
 }
 
 export { canRequestLeave };
@@ -80,9 +93,10 @@ export async function checkOut() {
 }
 
 export async function submitLeave(input) {
+  const user = getUserById(input.userId);
   const check = canRequestLeave(
+    user,
     cache.leaves.filter((l) => l.userId === input.userId),
-    cache.settings.leaveAllocation,
     input.type,
     input.startDate,
     input.endDate
@@ -110,6 +124,29 @@ export async function decideLeave(id, status) {
   const norm = normLeave(leave);
   const idx = cache.leaves.findIndex((l) => l.id === id);
   if (idx >= 0) cache.leaves[idx] = norm;
+  await refreshStore();
+  return norm;
+}
+
+export async function submitCompOffRequest(input) {
+  const request = await api.createCompOffRequest(input);
+  cache.compOffRequests.unshift(normCompOff(request));
+  emitChange();
+  return normCompOff(request);
+}
+
+export async function cancelCompOffRequest(id) {
+  await api.deleteCompOffRequest(id);
+  cache.compOffRequests = cache.compOffRequests.filter((r) => r.id !== id);
+  emitChange();
+}
+
+export async function decideCompOffRequest(id, status) {
+  const request =
+    status === "Approved" ? await api.approveCompOffRequest(id) : await api.rejectCompOffRequest(id);
+  const norm = normCompOff(request);
+  const idx = cache.compOffRequests.findIndex((r) => r.id === id);
+  if (idx >= 0) cache.compOffRequests[idx] = norm;
   await refreshStore();
   return norm;
 }

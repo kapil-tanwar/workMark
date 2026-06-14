@@ -3,6 +3,7 @@ export * from "./auth";
 export * from "./employees";
 export * from "./attendance";
 export * from "./leaves";
+export * from "./compOff";
 export * from "./settings";
 
 export async function healthCheck() {

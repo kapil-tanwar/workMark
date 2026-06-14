@@ -1,9 +1,10 @@
 import { Router } from "express";
 import Attendance from "../models/Attendance.js";
 import Leave from "../models/Leave.js";
-import Settings from "../models/Settings.js";
+import User from "../models/User.js";
 import { authRequired } from "../middleware/auth.js";
 import { computeLeaveBalance } from "../utils/leaveBalance.js";
+import { ensureEarnedAccrualUpToDate } from "../utils/earnedAccrual.js";
 
 const router = Router();
 router.use(authRequired);
@@ -83,9 +84,10 @@ router.get("/summary/:userId", async (req, res, next) => {
       leave: recs.filter((r) => r.status === "Leave").length,
     };
 
-    const settings = (await Settings.findOne({ key: "global" })) || (await Settings.create({ key: "global" }));
+    await ensureEarnedAccrualUpToDate();
+    const user = await User.findById(userId);
     const leaves = await Leave.find({ user: userId });
-    const leaveBalance = computeLeaveBalance(leaves, settings.leaveAllocation, { includePending: false });
+    const leaveBalance = computeLeaveBalance(user, leaves, { includePending: false });
 
     res.json({
       counts,

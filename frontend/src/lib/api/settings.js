@@ -1,7 +1,5 @@
 import { request } from "./client";
 
-const DEFAULT_ALLOCATION = { casual: 8, sick: 10, earned: 12 };
-
 export async function getSettings() {
   const data = await request("/api/settings");
   const s = data.settings || {};
@@ -9,7 +7,7 @@ export async function getSettings() {
     companyName: s.companyName || "Acme Corporation",
     companyEmail: s.companyEmail || "hr@acme.co",
     workingHours: s.workingHours || "09:00 – 18:00",
-    leaveAllocation: s.leaveAllocation || DEFAULT_ALLOCATION,
+    monthlyEarnedAccrual: s.monthlyEarnedAccrual ?? 1.5,
   };
 }
 
@@ -20,6 +18,6 @@ export async function patchSettings(body) {
     companyName: s.companyName,
     companyEmail: s.companyEmail,
     workingHours: s.workingHours,
-    leaveAllocation: s.leaveAllocation,
+    monthlyEarnedAccrual: s.monthlyEarnedAccrual ?? 1.5,
   };
 }

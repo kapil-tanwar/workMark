@@ -6,6 +6,7 @@ import { PageHeader, StatCard, StatusBadge } from "@/components/wf-ui";
 import { AttendanceActions } from "@/components/attendance/AttendanceActions";
 import { WeekendNotice } from "@/components/attendance/WeekendNotice";
 import { todayISO, formatLongDate } from "@/lib/utils/date";
+import { formatLeaveDays } from "@/lib/leave-utils";
 import { CheckCircle2, XCircle, CalendarDays, Sparkles, Plus, Clock } from "lucide-react";
 
 export const Route = createFileRoute("/_app/dashboard")({
@@ -58,8 +59,8 @@ function EmployeeDashboard() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <StatCard label="Present days" value={counts.present} hint="This month" icon={CheckCircle2} tone="success" />
         <StatCard label="Absent days" value={counts.absent} hint="This month" icon={XCircle} tone="destructive" />
-        <StatCard label="Leaves taken" value={balance.taken} hint={`of ${balance.total} allocated`} icon={CalendarDays} tone="info" />
-        <StatCard label="Remaining leaves" value={balance.remaining} hint="Available balance" icon={Sparkles} tone="primary" />
+        <StatCard label="Leaves taken" value={formatLeaveDays(balance.taken)} hint={`of ${formatLeaveDays(balance.total)} total`} icon={CalendarDays} tone="info" />
+        <StatCard label="Remaining leaves" value={formatLeaveDays(Math.max(0, balance.totalRemaining))} hint="Earned + comp-off" icon={Sparkles} tone="primary" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
