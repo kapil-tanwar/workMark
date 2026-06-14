@@ -39,7 +39,7 @@ function SettingsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Settings" description="Company info and leave allocation." />
+      <PageHeader title="Settings" description="Company info and leave policies." />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-card border border-border rounded-xl p-6 space-y-4">
           <h3 className="font-semibold">Company information</h3>
@@ -58,35 +58,23 @@ function SettingsPage() {
         </div>
 
         <div className="bg-card border border-border rounded-xl p-6 space-y-4">
-          <h3 className="font-semibold">Leave allocation (days per year)</h3>
+          <h3 className="font-semibold">Leave policy</h3>
           <div className="space-y-1.5">
-            <Label>Casual leave</Label>
+            <Label>Monthly earned leave accrual (days)</Label>
             <Input
               type="number"
-              value={s.leaveAllocation.casual}
-              onChange={(e) =>
-                setS({ ...s, leaveAllocation: { ...s.leaveAllocation, casual: +e.target.value } })
-              }
+              step="0.5"
+              min="0"
+              value={s.monthlyEarnedAccrual}
+              onChange={(e) => setS({ ...s, monthlyEarnedAccrual: +e.target.value })}
             />
+            <p className="text-xs text-muted-foreground">
+              Added automatically at 00:00:01 on the 1st of every month for all active employees.
+            </p>
           </div>
-          <div className="space-y-1.5">
-            <Label>Sick leave</Label>
-            <Input
-              type="number"
-              value={s.leaveAllocation.sick}
-              onChange={(e) => setS({ ...s, leaveAllocation: { ...s.leaveAllocation, sick: +e.target.value } })}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Earned leave</Label>
-            <Input
-              type="number"
-              value={s.leaveAllocation.earned}
-              onChange={(e) =>
-                setS({ ...s, leaveAllocation: { ...s.leaveAllocation, earned: +e.target.value } })
-              }
-            />
-          </div>
+          <p className="text-sm text-muted-foreground">
+            Comp-off leave is earned when employees submit overtime requests and admins approve them (0.5 for half day, 1 for full day).
+          </p>
         </div>
       </div>
       <div className="flex justify-end">

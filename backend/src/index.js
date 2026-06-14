@@ -8,8 +8,10 @@ import authRoutes from "./routes/auth.js";
 import employeeRoutes from "./routes/employees.js";
 import attendanceRoutes from "./routes/attendance.js";
 import leaveRoutes from "./routes/leaves.js";
+import compOffRoutes from "./routes/compOff.js";
 import reportRoutes from "./routes/reports.js";
 import settingsRoutes from "./routes/settings.js";
+import { ensureEarnedAccrualUpToDate, scheduleMonthlyAccrual } from "./utils/earnedAccrual.js";
 
 const app = express();
 app.use(cors({ origin: process.env.CORS_ORIGIN?.split(",") ?? "*", credentials: true }));
@@ -22,6 +24,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/employees", employeeRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/leaves", leaveRoutes);
+app.use("/api/comp-off", compOffRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/settings", settingsRoutes);
 
@@ -38,6 +41,8 @@ const PORT = process.env.PORT || 4000;
 async function start() {
   try {
     await connectDB();
+    await ensureEarnedAccrualUpToDate();
+    scheduleMonthlyAccrual();
     app.listen(PORT, () => console.log(`API ready on http://localhost:${PORT}`));
   } catch (err) {
     console.error("MongoDB connection error:", err.message);

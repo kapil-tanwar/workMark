@@ -1,16 +1,29 @@
 import { Router } from "express";
 import { z } from "zod";
 import Leave from "../models/Leave.js";
-import Settings from "../models/Settings.js";
+import User from "../models/User.js";
 import { authRequired, adminOnly } from "../middleware/auth.js";
-import { canRequestLeave } from "../utils/leaveBalance.js";
+import { canRequestLeave, computeLeaveBalance } from "../utils/leaveBalance.js";
 import { syncApprovedLeaveAttendance } from "../utils/syncLeaveAttendance.js";
+import { ensureEarnedAccrualUpToDate } from "../utils/earnedAccrual.js";
 
 const router = Router();
 router.use(authRequired);
 
+router.get("/balance", async (req, res, next) => {
+  try {
+    await ensureEarnedAccrualUpToDate();
+    const user = await User.findById(req.user._id);
+    const leaves = await Leave.find({ user: req.user._id });
+    res.json({ balance: computeLeaveBalance(user, leaves, { includePending: true }) });
+  } catch (e) {
+    next(e);
+  }
+});
+
 router.get("/", async (req, res, next) => {
   try {
+    await ensureEarnedAccrualUpToDate();
     const { userId, status } = req.query;
     const q = {};
     if (req.user.role !== "admin") q.user = req.user._id;
@@ -18,22 +31,25 @@ router.get("/", async (req, res, next) => {
     if (status) q.status = status;
     const leaves = await Leave.find(q).populate("user", "name email employeeId department").sort({ createdAt: -1 });
     res.json({ leaves });
-  } catch (e) { next(e); }
+  } catch (e) {
+    next(e);
+  }
 });
 
 const createSchema = z.object({
-  type: z.enum(["Casual Leave", "Sick Leave", "Earned Leave"]),
+  type: z.enum(["Earned Leave", "Comp-Off Leave"]),
   startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   reason: z.string().min(1).max(500),
 });
 
 async function validateLeaveRequest(userId, type, startDate, endDate, excludeLeaveId) {
-  const settings = (await Settings.findOne({ key: "global" })) || (await Settings.create({ key: "global" }));
+  await ensureEarnedAccrualUpToDate();
+  const user = await User.findById(userId);
   const q = { user: userId };
   if (excludeLeaveId) q._id = { $ne: excludeLeaveId };
   const leaves = await Leave.find(q);
-  return canRequestLeave(leaves, settings.leaveAllocation, type, startDate, endDate);
+  return canRequestLeave(user, leaves, type, startDate, endDate);
 }
 
 router.post("/", async (req, res, next) => {
@@ -46,7 +62,9 @@ router.post("/", async (req, res, next) => {
     if (!check.ok) return next({ status: 400, message: check.message });
     const leave = await Leave.create({ ...data, user: req.user._id });
     res.status(201).json({ leave });
-  } catch (e) { next(e); }
+  } catch (e) {
+    next(e);
+  }
 });
 
 router.patch("/:id/approve", adminOnly, async (req, res, next) => {
@@ -71,7 +89,9 @@ router.patch("/:id/approve", adminOnly, async (req, res, next) => {
     );
     await syncApprovedLeaveAttendance(leave);
     res.json({ leave });
-  } catch (e) { next(e); }
+  } catch (e) {
+    next(e);
+  }
 });
 
 router.patch("/:id/reject", adminOnly, async (req, res, next) => {
@@ -83,7 +103,9 @@ router.patch("/:id/reject", adminOnly, async (req, res, next) => {
     );
     if (!leave) return next({ status: 404, message: "Not found" });
     res.json({ leave });
-  } catch (e) { next(e); }
+  } catch (e) {
+    next(e);
+  }
 });
 
 router.delete("/:id", async (req, res, next) => {
@@ -95,7 +117,9 @@ router.delete("/:id", async (req, res, next) => {
       return next({ status: 403, message: "Forbidden" });
     await leave.deleteOne();
     res.json({ ok: true });
-  } catch (e) { next(e); }
+  } catch (e) {
+    next(e);
+  }
 });
 
 export default router;

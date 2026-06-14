@@ -23,6 +23,7 @@ function AdminDashboard() {
 
   const { present, absent, onLeave } = computeDailyAttendanceStats(employees, leaves, attendance, today);
   const pending = leaves.filter((l) => l.status === "Pending");
+  const pendingCompOff = store.getCompOffRequests().filter((r) => r.status === "Pending");
   const chartData = buildWeeklyChartData(employees, leaves, attendance, lastNDays(7));
 
   function getUserName(l) {
@@ -39,7 +40,7 @@ function AdminDashboard() {
         <StatCard label="Present today" value={present} icon={UserCheck} tone="success" />
         <StatCard label="Absent today" value={absent} icon={UserX} tone="destructive" />
         <StatCard label="On leave" value={onLeave} icon={CalendarOff} tone="info" />
-        <StatCard label="Pending leaves" value={pending.length} icon={FileClock} tone="warning" />
+        <StatCard label="Pending requests" value={pending.length + pendingCompOff.length} icon={FileClock} tone="warning" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">

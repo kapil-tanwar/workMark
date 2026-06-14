@@ -27,3 +27,19 @@ export function normLeave(l) {
     userDepartment: l.user?.department,
   };
 }
+
+export function normCompOff(r) {
+  const userId = r.user?._id || r.user || r.userId;
+  return {
+    id: r._id || r.id,
+    userId: String(userId),
+    overtimeDate: r.overtimeDate,
+    duration: r.duration,
+    reason: r.reason,
+    status: r.status,
+    creditAmount: r.creditAmount,
+    appliedAt: r.createdAt || r.appliedAt,
+    userName: r.user?.name,
+    userDepartment: r.user?.department,
+  };
+}
