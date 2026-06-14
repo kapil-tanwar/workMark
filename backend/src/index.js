@@ -13,13 +13,37 @@ import reportRoutes from "./routes/reports.js";
 import settingsRoutes from "./routes/settings.js";
 import { ensureEarnedAccrualUpToDate, scheduleMonthlyAccrual } from "./utils/earnedAccrual.js";
 
+function normalizeOrigin(origin) {
+  return String(origin || "").trim().replace(/\/$/, "");
+}
+
+function getCorsOrigins() {
+  return (process.env.CORS_ORIGIN || "")
+    .split(",")
+    .map(normalizeOrigin)
+    .filter(Boolean);
+}
+
 const app = express();
 app.set("trust proxy", 1);
 
-const corsOrigins = process.env.CORS_ORIGIN?.split(",").map((o) => o.trim()).filter(Boolean);
+const corsOrigins = getCorsOrigins();
+
 app.use(
   cors({
-    origin: corsOrigins?.length ? corsOrigins : true,
+    origin(origin, callback) {
+      // Non-browser clients (curl, health checks) have no Origin header
+      if (!origin) return callback(null, true);
+      if (!corsOrigins.length) return callback(null, true);
+
+      const requestOrigin = normalizeOrigin(origin);
+      if (corsOrigins.includes(requestOrigin)) {
+        return callback(null, true);
+      }
+
+      console.warn(`CORS blocked origin: ${origin}. Allowed: ${corsOrigins.join(", ")}`);
+      return callback(new Error(`Origin ${origin} not allowed by CORS`));
+    },
     credentials: true,
   })
 );
@@ -59,7 +83,14 @@ async function start() {
     await connectDB();
     await ensureEarnedAccrualUpToDate();
     scheduleMonthlyAccrual();
-    app.listen(PORT, "0.0.0.0", () => console.log(`API ready on port ${PORT}`));
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`API ready on port ${PORT}`);
+      if (corsOrigins.length) {
+        console.log("CORS allowed origins:", corsOrigins.join(", "));
+      } else {
+        console.warn("CORS_ORIGIN not set — all browser origins allowed (set in production)");
+      }
+    });
   } catch (err) {
     console.error("MongoDB connection error:", err.message);
     if (err.code === "ENOTFOUND" || String(err.message).includes("querySrv")) {
