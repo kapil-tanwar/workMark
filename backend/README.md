@@ -27,11 +27,3 @@ Install [MongoDB Community Server](https://www.mongodb.com/try/download/communit
 
 Employees can be added via signup or the admin Employees page in the frontend.
 
-## Environment
-
-| Variable | Description |
-|----------|-------------|
-| `PORT` | API port (default `4000`) |
-| `MONGODB_URI` | MongoDB connection string |
-| `JWT_SECRET` | Secret for auth tokens |
-| `CORS_ORIGIN` | Frontend URL (default `http://localhost:8080`) |

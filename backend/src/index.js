@@ -14,10 +14,21 @@ import settingsRoutes from "./routes/settings.js";
 import { ensureEarnedAccrualUpToDate, scheduleMonthlyAccrual } from "./utils/earnedAccrual.js";
 
 const app = express();
-app.use(cors({ origin: process.env.CORS_ORIGIN?.split(",") ?? "*", credentials: true }));
+app.set("trust proxy", 1);
+
+const corsOrigins = process.env.CORS_ORIGIN?.split(",").map((o) => o.trim()).filter(Boolean);
+app.use(
+  cors({
+    origin: corsOrigins?.length ? corsOrigins : true,
+    credentials: true,
+  })
+);
 app.use(express.json({ limit: "1mb" }));
 app.use(morgan("dev"));
 
+app.get("/", (_req, res) =>
+  res.json({ ok: true, service: "WorkFlow HR API", health: "/health" })
+);
 app.get("/health", (_req, res) => res.json({ ok: true, db: getDBStatus() }));
 
 app.use("/api/auth", authRoutes);
@@ -39,11 +50,16 @@ app.use((err, _req, res, _next) => {
 const PORT = process.env.PORT || 4000;
 
 async function start() {
+  if (process.env.NODE_ENV === "production" && !process.env.JWT_SECRET) {
+    console.error("JWT_SECRET is required in production");
+    process.exit(1);
+  }
+
   try {
     await connectDB();
     await ensureEarnedAccrualUpToDate();
     scheduleMonthlyAccrual();
-    app.listen(PORT, () => console.log(`API ready on http://localhost:${PORT}`));
+    app.listen(PORT, "0.0.0.0", () => console.log(`API ready on port ${PORT}`));
   } catch (err) {
     console.error("MongoDB connection error:", err.message);
     if (err.code === "ENOTFOUND" || String(err.message).includes("querySrv")) {
