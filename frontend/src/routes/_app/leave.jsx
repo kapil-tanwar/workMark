@@ -41,6 +41,7 @@ function LeavePage() {
   const [open, setOpen] = useState(false);
   const [compOffOpen, setCompOffOpen] = useState(false);
   const [type, setType] = useState("Earned Leave");
+  const [leaveDuration, setLeaveDuration] = useState("full");
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
   const [reason, setReason] = useState("");
@@ -73,14 +74,27 @@ function LeavePage() {
       toast.error("End date must be on or after start date");
       return;
     }
+    if (leaveDuration === "half" && start !== end) {
+      toast.error("Half-day leave must be for a single date");
+      return;
+    }
     setSubmitting(true);
     try {
-      await submitLeave({ userId: user.id, type, startDate: start, endDate: end, reason });
+      const endDate = leaveDuration === "half" ? start : end;
+      await submitLeave({
+        userId: user.id,
+        type,
+        startDate: start,
+        endDate,
+        duration: leaveDuration,
+        reason,
+      });
       toast.success("Leave request submitted");
       setOpen(false);
       setReason("");
       setStart("");
       setEnd("");
+      setLeaveDuration("full");
     } catch (err) {
       toast.error(err.message);
     } finally {
@@ -219,16 +233,48 @@ function LeavePage() {
                       Available: {formatLeaveDays(Math.max(0, bal.remainingByType[type] ?? 0))} day(s)
                     </p>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1.5">
-                      <Label>Start date</Label>
-                      <Input type="date" value={start} onChange={(e) => setStart(e.target.value)} />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label>End date</Label>
-                      <Input type="date" value={end} onChange={(e) => setEnd(e.target.value)} />
-                    </div>
+                  <div className="space-y-1.5">
+                    <Label>Duration</Label>
+                    <Select
+                      value={leaveDuration}
+                      onValueChange={(v) => {
+                        setLeaveDuration(v);
+                        if (v === "half" && start) setEnd(start);
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="full">Full day</SelectItem>
+                        <SelectItem value="half">Half day (0.5)</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
+                  {leaveDuration === "half" ? (
+                    <div className="space-y-1.5">
+                      <Label>Date</Label>
+                      <Input
+                        type="date"
+                        value={start}
+                        onChange={(e) => {
+                          setStart(e.target.value);
+                          setEnd(e.target.value);
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <Label>Start date</Label>
+                        <Input type="date" value={start} onChange={(e) => setStart(e.target.value)} />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>End date</Label>
+                        <Input type="date" value={end} onChange={(e) => setEnd(e.target.value)} />
+                      </div>
+                    </div>
+                  )}
                   <div className="space-y-1.5">
                     <Label>Reason</Label>
                     <Textarea
@@ -292,6 +338,7 @@ function LeavePage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Type</TableHead>
+                <TableHead>Duration</TableHead>
                 <TableHead>Start</TableHead>
                 <TableHead>End</TableHead>
                 <TableHead>Reason</TableHead>
@@ -302,7 +349,7 @@ function LeavePage() {
             <TableBody>
               {leaves.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground py-12">
+                  <TableCell colSpan={7} className="text-center text-muted-foreground py-12">
                     No leave requests yet
                   </TableCell>
                 </TableRow>
@@ -310,6 +357,7 @@ function LeavePage() {
                 leaves.map((l) => (
                   <TableRow key={l.id}>
                     <TableCell className="font-medium">{l.type}</TableCell>
+                    <TableCell>{l.duration === "half" ? "Half day" : "Full day"}</TableCell>
                     <TableCell>{l.startDate}</TableCell>
                     <TableCell>{l.endDate}</TableCell>
                     <TableCell className="max-w-[240px] truncate text-muted-foreground">{l.reason}</TableCell>

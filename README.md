@@ -39,3 +39,5 @@ MONGODB_URI=mongodb://127.0.0.1:27017/attend_easy
 Install and start [MongoDB Community Server](https://www.mongodb.com/try/download/community), or use a valid MongoDB Atlas connection string.
 
 Check connection: `GET http://localhost:4000/health` returns `{ ok: true, db: { ... } }`.
+
+

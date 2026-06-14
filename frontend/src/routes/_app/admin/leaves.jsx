@@ -83,6 +83,7 @@ function AdminLeaves() {
               <TableRow>
                 <TableHead>Employee</TableHead>
                 <TableHead>Type</TableHead>
+                <TableHead>Duration</TableHead>
                 <TableHead>Start</TableHead>
                 <TableHead>End</TableHead>
                 <TableHead>Reason</TableHead>
@@ -93,7 +94,7 @@ function AdminLeaves() {
             <TableBody>
               {leaves.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground py-12">
+                  <TableCell colSpan={8} className="text-center text-muted-foreground py-12">
                     No requests
                   </TableCell>
                 </TableRow>
@@ -107,6 +108,7 @@ function AdminLeaves() {
                         <div className="text-xs text-muted-foreground">{l.userDepartment || u?.department}</div>
                       </TableCell>
                       <TableCell>{l.type}</TableCell>
+                      <TableCell>{l.duration === "half" ? "Half day" : "Full day"}</TableCell>
                       <TableCell>{l.startDate}</TableCell>
                       <TableCell>{l.endDate}</TableCell>
                       <TableCell className="max-w-[240px] truncate text-muted-foreground">{l.reason}</TableCell>

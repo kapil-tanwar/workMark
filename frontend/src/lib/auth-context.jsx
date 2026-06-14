@@ -57,6 +57,12 @@ export function AuthProvider({ children }) {
         api.setToken(null);
         setUser(null);
       },
+      updateProfile: async (input) => {
+        const u = await api.updateProfile(input);
+        setUser(u);
+        await refreshStore();
+        return u;
+      },
     }),
     [user, loading]
   );

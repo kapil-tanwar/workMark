@@ -1,15 +1,20 @@
 export const LEAVE_TYPES = ["Earned Leave", "Comp-Off Leave"];
 
-export function leaveDays(startDate, endDate) {
+export function leaveRequestDays(startDate, endDate, duration = "full") {
+  if (startDate === endDate && duration === "half") return 0.5;
   const a = new Date(startDate).getTime();
   const b = new Date(endDate).getTime();
   return Math.max(1, Math.round((b - a) / 86400000) + 1);
 }
 
+export function leaveDaysFromRecord(leave) {
+  return leaveRequestDays(leave.startDate, leave.endDate, leave.duration || "full");
+}
+
 function sumUsedDays(leaves, type) {
   return leaves
     .filter((l) => l.type === type)
-    .reduce((sum, l) => sum + leaveDays(l.startDate, l.endDate), 0);
+    .reduce((sum, l) => sum + leaveDaysFromRecord(l), 0);
 }
 
 export function computeLeaveBalance(user, leaves, { includePending = true } = {}) {
@@ -43,8 +48,11 @@ export function computeLeaveBalance(user, leaves, { includePending = true } = {}
   };
 }
 
-export function canRequestLeave(user, leaves, type, startDate, endDate) {
-  const requested = leaveDays(startDate, endDate);
+export function canRequestLeave(user, leaves, type, startDate, endDate, duration = "full") {
+  if (duration === "half" && startDate !== endDate) {
+    return { ok: false, message: "Half-day leave must be for a single date." };
+  }
+  const requested = leaveRequestDays(startDate, endDate, duration);
   const balance = computeLeaveBalance(user, leaves, { includePending: true });
   const available = balance.remainingByType[type] ?? 0;
   if (requested > available) {
@@ -54,6 +62,10 @@ export function canRequestLeave(user, leaves, type, startDate, endDate) {
     };
   }
   return { ok: true, requested, available };
+}
+
+export function leaveDays(startDate, endDate, duration = "full") {
+  return leaveRequestDays(startDate, endDate, duration);
 }
 
 function fmt(n) {

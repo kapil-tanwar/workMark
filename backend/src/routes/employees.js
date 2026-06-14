@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import User from "../models/User.js";
 import { authRequired, adminOnly } from "../middleware/auth.js";
+import { creditNewEmployeeEarnedLeave } from "../utils/earnedAccrual.js";
 
 const router = Router();
 router.use(authRequired);
@@ -51,7 +52,9 @@ router.post("/", adminOnly, async (req, res, next) => {
       employeeId,
       passwordHash: await bcrypt.hash(password, 10),
     });
-    res.status(201).json({ employee: u });
+    if (u.role === "employee") await creditNewEmployeeEarnedLeave(u._id);
+    const employee = await User.findById(u._id);
+    res.status(201).json({ employee });
   } catch (e) { next(e); }
 });
 

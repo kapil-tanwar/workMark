@@ -40,16 +40,17 @@ const createSchema = z.object({
   type: z.enum(["Earned Leave", "Comp-Off Leave"]),
   startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  duration: z.enum(["half", "full"]).default("full"),
   reason: z.string().min(1).max(500),
 });
 
-async function validateLeaveRequest(userId, type, startDate, endDate, excludeLeaveId) {
+async function validateLeaveRequest(userId, type, startDate, endDate, duration, excludeLeaveId) {
   await ensureEarnedAccrualUpToDate();
   const user = await User.findById(userId);
   const q = { user: userId };
   if (excludeLeaveId) q._id = { $ne: excludeLeaveId };
   const leaves = await Leave.find(q);
-  return canRequestLeave(user, leaves, type, startDate, endDate);
+  return canRequestLeave(user, leaves, type, startDate, endDate, duration);
 }
 
 router.post("/", async (req, res, next) => {
@@ -58,7 +59,16 @@ router.post("/", async (req, res, next) => {
     if (data.endDate < data.startDate) {
       return next({ status: 400, message: "End date must be on or after start date" });
     }
-    const check = await validateLeaveRequest(req.user._id, data.type, data.startDate, data.endDate);
+    if (data.duration === "half" && data.startDate !== data.endDate) {
+      return next({ status: 400, message: "Half-day leave must be for a single date" });
+    }
+    const check = await validateLeaveRequest(
+      req.user._id,
+      data.type,
+      data.startDate,
+      data.endDate,
+      data.duration
+    );
     if (!check.ok) return next({ status: 400, message: check.message });
     const leave = await Leave.create({ ...data, user: req.user._id });
     res.status(201).json({ leave });
@@ -78,6 +88,7 @@ router.patch("/:id/approve", adminOnly, async (req, res, next) => {
       existing.type,
       existing.startDate,
       existing.endDate,
+      existing.duration || "full",
       existing._id
     );
     if (!check.ok) return next({ status: 400, message: check.message });
