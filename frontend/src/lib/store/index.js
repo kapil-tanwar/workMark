@@ -115,12 +115,20 @@ export async function decideLeave(id, status) {
 }
 
 export async function saveEmployee(edit, form, password = "password") {
+  const payload = {
+    name: form.name,
+    employeeId: form.employeeId,
+    department: form.department,
+    designation: form.designation,
+    phone: form.phone,
+    email: form.email?.trim() || "",
+  };
   if (edit) {
-    const updated = await api.updateEmployee(edit.id, form);
+    const updated = await api.updateEmployee(edit.id, payload);
     const idx = cache.users.findIndex((u) => u.id === edit.id);
     if (idx >= 0) cache.users[idx] = updated;
   } else {
-    const created = await api.createEmployee({ ...form, password, role: "employee" });
+    const created = await api.createEmployee({ ...payload, password, role: "employee" });
     cache.users.unshift(created);
   }
   emitChange();
@@ -130,5 +138,11 @@ export async function toggleEmployeeActive(user) {
   const updated = await api.updateEmployee(user.id, { active: !user.active });
   const idx = cache.users.findIndex((u) => u.id === user.id);
   if (idx >= 0) cache.users[idx] = updated;
+  emitChange();
+}
+
+export async function deleteEmployee(userId) {
+  await api.deleteEmployee(userId);
+  cache.users = cache.users.filter((u) => u.id !== userId);
   emitChange();
 }

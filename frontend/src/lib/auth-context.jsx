@@ -43,7 +43,7 @@ export function AuthProvider({ children }) {
         const employeeId = validateEmployeeId(input.employeeId);
         const { user: u } = await api.signup({
           name: input.name,
-          email: input.email,
+          email: input.email?.trim() || "",
           password: input.password,
           role: input.role,
           employeeId,

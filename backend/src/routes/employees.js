@@ -22,7 +22,7 @@ router.get("/:id", async (req, res, next) => {
 
 const createSchema = z.object({
   name: z.string().min(1),
-  email: z.string().email(),
+  email: z.union([z.string().email(), z.literal("")]).optional(),
   password: z.string().min(6),
   employeeId: z.string().min(2).max(32),
   role: z.enum(["admin", "employee"]).default("employee"),
@@ -34,7 +34,8 @@ const createSchema = z.object({
 router.post("/", adminOnly, async (req, res, next) => {
   try {
     const data = createSchema.parse(req.body);
-    if (await User.findOne({ email: data.email.toLowerCase() }))
+    const email = data.email?.trim() ? data.email.trim().toLowerCase() : undefined;
+    if (email && (await User.findOne({ email })))
       return next({ status: 409, message: "Email already exists" });
     const phone = data.phone.trim();
     if (await User.findOne({ phone }))
@@ -42,9 +43,10 @@ router.post("/", adminOnly, async (req, res, next) => {
     const employeeId = data.employeeId.trim().toUpperCase();
     if (await User.findOne({ employeeId }))
       return next({ status: 409, message: "Employee ID already in use" });
-    const { password, ...rest } = data;
+    const { password, email: _e, ...rest } = data;
     const u = await User.create({
       ...rest,
+      ...(email ? { email } : {}),
       phone,
       employeeId,
       passwordHash: await bcrypt.hash(password, 10),
@@ -55,7 +57,7 @@ router.post("/", adminOnly, async (req, res, next) => {
 
 const updateSchema = z.object({
   name: z.string().optional(),
-  email: z.string().email().optional(),
+  email: z.union([z.string().email(), z.literal("")]).optional(),
   employeeId: z.string().min(2).max(32).optional(),
   role: z.enum(["admin", "employee"]).optional(),
   department: z.string().optional(),
@@ -69,6 +71,16 @@ router.patch("/:id", adminOnly, async (req, res, next) => {
   try {
     const data = updateSchema.parse(req.body);
     const patch = { ...data };
+    delete patch.email;
+
+    if (data.email !== undefined) {
+      const email = data.email?.trim() ? data.email.trim().toLowerCase() : undefined;
+      if (email) {
+        const taken = await User.findOne({ email, _id: { $ne: req.params.id } });
+        if (taken) return next({ status: 409, message: "Email already in use" });
+        patch.email = email;
+      }
+    }
     if (data.employeeId) {
       const employeeId = data.employeeId.trim().toUpperCase();
       const taken = await User.findOne({ employeeId, _id: { $ne: req.params.id } });
@@ -85,7 +97,14 @@ router.patch("/:id", adminOnly, async (req, res, next) => {
       patch.passwordHash = await bcrypt.hash(data.password, 10);
       delete patch.password;
     }
-    const u = await User.findByIdAndUpdate(req.params.id, patch, { new: true });
+
+    const unset = {};
+    if (data.email !== undefined && !data.email?.trim()) unset.email = "";
+
+    const update = { ...patch };
+    if (Object.keys(unset).length) update.$unset = unset;
+
+    const u = await User.findByIdAndUpdate(req.params.id, update, { new: true });
     if (!u) return next({ status: 404, message: "Not found" });
     res.json({ employee: u });
   } catch (e) { next(e); }

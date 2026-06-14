@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { validateEmployeeId } from "@/lib/auth-helpers";
-import { store, saveEmployee, toggleEmployeeActive } from "@/lib/store";
+import { store, saveEmployee, toggleEmployeeActive, deleteEmployee } from "@/lib/store";
 import { useWorkflowRefresh } from "@/hooks/use-workflow-refresh";
 import { PageHeader, StatusBadge } from "@/components/wf-ui";
 import { Button } from "@/components/ui/button";
@@ -14,8 +14,18 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Search, Power, Pencil } from "lucide-react";
+import { Plus, Search, Power, Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -33,12 +43,14 @@ function EmployeesPage() {
   const [edit, setEdit] = useState(null);
   const [form, setForm] = useState(empty);
   const [saving, setSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   const list = store.getUsers().filter((u) => u.role === "employee");
   const filtered = list.filter(
     (u) =>
       u.name.toLowerCase().includes(q.toLowerCase()) ||
-      u.email.toLowerCase().includes(q.toLowerCase()) ||
+      (u.email || "").toLowerCase().includes(q.toLowerCase()) ||
       (u.employeeId || "").toLowerCase().includes(q.toLowerCase())
   );
 
@@ -52,7 +64,7 @@ function EmployeesPage() {
     setEdit(u);
     setForm({
       name: u.name,
-      email: u.email,
+      email: u.email || "",
       employeeId: u.employeeId,
       department: u.department,
       designation: u.designation,
@@ -62,8 +74,8 @@ function EmployeesPage() {
   }
 
   async function handleSave() {
-    if (!form.name || !form.email || !form.phone?.trim()) {
-      toast.error("Name, email, and phone are required");
+    if (!form.name || !form.phone?.trim()) {
+      toast.error("Name and phone are required");
       return;
     }
     let employeeId;
@@ -94,6 +106,20 @@ function EmployeesPage() {
     }
   }
 
+  async function handleDelete() {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await deleteEmployee(deleteTarget.id);
+      toast.success("Employee deleted");
+      setDeleteTarget(null);
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -116,8 +142,13 @@ function EmployeesPage() {
                   <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
                 </div>
                 <div className="col-span-2 space-y-1.5">
-                  <Label>Email</Label>
-                  <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+                  <Label>Email (optional)</Label>
+                  <Input
+                    type="email"
+                    placeholder="you@company.com"
+                    value={form.email}
+                    onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  />
                 </div>
                 <div className="col-span-2 space-y-1.5">
                   <Label>Employee ID</Label>
@@ -166,51 +197,85 @@ function EmployeesPage() {
             />
           </div>
         </div>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Employee ID</TableHead>
-              <TableHead>Department</TableHead>
-              <TableHead>Designation</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filtered.length === 0 ? (
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={6} className="h-32 text-center text-sm text-muted-foreground">
-                  No employees yet. Add team members or ask them to sign up.
-                </TableCell>
+                <TableHead>Name</TableHead>
+                <TableHead>Employee ID</TableHead>
+                <TableHead>Department</TableHead>
+                <TableHead>Designation</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
-            ) : (
-              filtered.map((u) => (
-                <TableRow key={u.id}>
-                  <TableCell>
-                    <div className="font-medium">{u.name}</div>
-                    <div className="text-xs text-muted-foreground">{u.email}</div>
-                  </TableCell>
-                  <TableCell className="font-mono text-xs">{u.employeeId}</TableCell>
-                  <TableCell>{u.department}</TableCell>
-                  <TableCell>{u.designation}</TableCell>
-                  <TableCell>
-                    <StatusBadge status={u.active ? "Active" : "Inactive"} />
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button size="sm" variant="ghost" onClick={() => openEdit(u)}>
-                      <Pencil className="size-4" />
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => handleToggle(u)}>
-                      <Power className="size-4" />
-                    </Button>
+            </TableHeader>
+            <TableBody>
+              {filtered.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="h-32 text-center text-sm text-muted-foreground">
+                    No employees yet. Add team members or ask them to sign up.
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ) : (
+                filtered.map((u) => (
+                  <TableRow key={u.id}>
+                    <TableCell>
+                      <div className="font-medium">{u.name}</div>
+                      <div className="text-xs text-muted-foreground">{u.email || "No email"}</div>
+                    </TableCell>
+                    <TableCell className="font-mono text-xs">{u.employeeId}</TableCell>
+                    <TableCell>{u.department}</TableCell>
+                    <TableCell>{u.designation}</TableCell>
+                    <TableCell>
+                      <StatusBadge status={u.active ? "Active" : "Inactive"} />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="inline-flex items-center justify-end gap-0.5">
+                        <Button size="sm" variant="ghost" onClick={() => openEdit(u)} title="Edit">
+                          <Pencil className="size-4" />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => handleToggle(u)} title={u.active ? "Deactivate" : "Activate"}>
+                          <Power className="size-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => setDeleteTarget(u)}
+                          title="Delete"
+                        >
+                          <Trash2 className="size-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(v) => !v && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete employee?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove {deleteTarget?.name} and cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

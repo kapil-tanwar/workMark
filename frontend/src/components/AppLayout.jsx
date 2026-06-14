@@ -111,7 +111,7 @@ export function AppLayout() {
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>{user.email}</DropdownMenuLabel>
+              <DropdownMenuLabel>{user.email || user.phone || user.employeeId}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               {user.role === "employee" && (<DropdownMenuItem onClick={() => navigate({ to: "/profile" })}>Profile</DropdownMenuItem>)}
               <DropdownMenuItem onClick={() => {

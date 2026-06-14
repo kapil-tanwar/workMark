@@ -1,10 +1,16 @@
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+
+const COLORS = {
+  Present: "#16a34a",
+  Absent: "#dc2626",
+  Leave: "#2563eb",
+};
 
 export function AttendanceChart({ data }) {
   return (
     <div className="h-56 sm:h-64 lg:h-72 w-full min-w-0">
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+        <BarChart data={data} margin={{ top: 8, right: 8, left: -16, bottom: 0 }} barGap={2} barCategoryGap="18%">
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
           <XAxis dataKey="day" tickLine={false} axisLine={false} style={{ fontSize: 11 }} interval={0} />
           <YAxis tickLine={false} axisLine={false} style={{ fontSize: 11 }} allowDecimals={false} />
@@ -16,9 +22,15 @@ export function AttendanceChart({ data }) {
               fontSize: 12,
             }}
           />
-          <Bar dataKey="Present" fill="oklch(0.62 0.16 155)" radius={[4, 4, 0, 0]} />
-          <Bar dataKey="Absent" fill="oklch(0.58 0.22 27)" radius={[4, 4, 0, 0]} />
-          <Bar dataKey="Leave" fill="oklch(0.65 0.14 230)" radius={[4, 4, 0, 0]} />
+          <Legend
+            verticalAlign="top"
+            height={28}
+            iconType="square"
+            formatter={(value) => <span className="text-xs text-foreground">{value}</span>}
+          />
+          <Bar dataKey="Present" name="Present" fill={COLORS.Present} radius={[4, 4, 0, 0]} barSize={14} />
+          <Bar dataKey="Absent" name="Absent" fill={COLORS.Absent} radius={[4, 4, 0, 0]} barSize={14} />
+          <Bar dataKey="Leave" name="Leave" fill={COLORS.Leave} radius={[4, 4, 0, 0]} barSize={14} />
         </BarChart>
       </ResponsiveContainer>
     </div>

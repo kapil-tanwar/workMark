@@ -17,10 +17,15 @@ function normalizeEmployeeId(id) {
   return String(id || "").trim().toUpperCase();
 }
 
+function normalizeEmail(email) {
+  const trimmed = String(email || "").trim().toLowerCase();
+  return trimmed || undefined;
+}
+
 const signupSchema = z
   .object({
     name: z.string().min(1).max(120),
-    email: z.string().email(),
+    email: z.union([z.string().email(), z.literal("")]).optional(),
     password: z.string().min(6).max(200),
     role: z.enum(["admin", "employee"]).default("employee"),
     employeeId: z.string().max(32).optional(),
@@ -38,8 +43,11 @@ const signupSchema = z
 router.post("/signup", async (req, res, next) => {
   try {
     const data = signupSchema.parse(req.body);
-    const existing = await User.findOne({ email: data.email.toLowerCase() });
-    if (existing) return next({ status: 409, message: "Email already registered" });
+    const email = normalizeEmail(data.email);
+    if (email) {
+      const existing = await User.findOne({ email });
+      if (existing) return next({ status: 409, message: "Email already registered" });
+    }
 
     const phone = data.phone.trim();
     if (await User.findOne({ phone })) {
@@ -56,7 +64,7 @@ router.post("/signup", async (req, res, next) => {
 
     const user = await User.create({
       name: data.name,
-      email: data.email,
+      ...(email ? { email } : {}),
       passwordHash: await bcrypt.hash(data.password, 10),
       role: data.role,
       employeeId,
@@ -76,11 +84,14 @@ router.post("/login", async (req, res, next) => {
     const identifier = email.trim();
     const user = await User.findOne({
       $or: [
-        { email: identifier.toLowerCase() },
+        ...(identifier.includes("@") ? [{ email: identifier.toLowerCase() }] : []),
         { employeeId: normalizeEmployeeId(identifier) },
       ],
     });
-    if (!user || !user.active) return next({ status: 401, message: "Invalid credentials" });
+    if (!user) return next({ status: 401, message: "Invalid credentials" });
+    if (!user.active) {
+      return next({ status: 403, message: "Account disabled. Contact your administrator." });
+    }
     const ok = await bcrypt.compare(password, user.passwordHash);
     if (!ok) return next({ status: 401, message: "Invalid credentials" });
     res.json({ token: sign(user), user });

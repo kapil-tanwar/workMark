@@ -16,7 +16,7 @@ function ProfilePage() {
 
   const items = [
     { icon: IdCard, label: "Employee ID", value: user.employeeId || "—" },
-    { icon: Mail, label: "Email", value: user.email },
+    { icon: Mail, label: "Email", value: user.email || "—" },
     { icon: Phone, label: "Phone", value: user.phone || "—" },
     { icon: Building2, label: "Department", value: user.department || "—" },
     { icon: BadgeCheck, label: "Designation", value: user.designation || "—" },

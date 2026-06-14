@@ -70,10 +70,10 @@ function SignupPage() {
           </div>
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="email">Email</Label>
+          <Label htmlFor="email">Email (optional)</Label>
           <div className="relative">
             <Mail className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input id="email" type="email" required className="pl-10 h-11" placeholder="you@company.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+            <Input id="email" type="email" className="pl-10 h-11" placeholder="you@company.com" value={email} onChange={(e) => setEmail(e.target.value)} />
           </div>
         </div>
         <div className="space-y-1.5">
