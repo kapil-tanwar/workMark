@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, redirect } from "@tanstack/react-router";
 import { useState } from "react";
 import { Briefcase, Mail, Lock, User as UserIcon, Loader2, IdCard, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,9 +8,16 @@ import { useAuth } from "@/lib/auth-context";
 import { AuthSplitLayout } from "@/components/auth/AuthSplitLayout";
 import { toast } from "sonner";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { getStoredUser, isAuthenticated } from "@/lib/auth-storage";
 
 export const Route = createFileRoute("/signup")({
   head: () => ({ meta: [{ title: "Create account — WorkFlow HR" }] }),
+  beforeLoad: () => {
+    if (typeof window === "undefined") return;
+    if (!isAuthenticated()) return;
+    const user = getStoredUser();
+    throw redirect({ to: user?.role === "admin" ? "/admin" : "/dashboard", replace: true });
+  },
   component: SignupPage,
 });
 
@@ -42,7 +49,7 @@ function SignupPage() {
     try {
       const u = await signup({ name, email, password, role, employeeId, phone });
       toast.success("Account created");
-      navigate({ to: u.role === "admin" ? "/admin" : "/dashboard" });
+      await navigate({ to: u.role === "admin" ? "/admin" : "/dashboard", replace: true });
     } catch (err) {
       toast.error(err.message);
     } finally {

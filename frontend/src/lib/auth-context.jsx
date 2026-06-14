@@ -1,26 +1,51 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { validateEmployeeId } from "./auth-helpers";
+import {
+  clearAuthStorage,
+  getStoredUser,
+  isAuthenticated,
+  setStoredUser,
+} from "./auth-storage";
 import * as api from "@/lib/api";
 import { refreshStore } from "@/lib/store";
 
 const AuthContext = createContext(null);
 
+function readInitialUser() {
+  if (typeof window === "undefined") return null;
+  return getStoredUser();
+}
+
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUserState] = useState(readInitialUser);
+  const [loading, setLoading] = useState(() => typeof window !== "undefined" && isAuthenticated());
+
+  function applyUser(u) {
+    const normalized = u ? api.normalizeUser(u) : null;
+    setUserState(normalized);
+    if (normalized) setStoredUser(normalized);
+    else clearAuthStorage();
+  }
+
+  function persistSession(token, u) {
+    api.setToken(token);
+    applyUser(u);
+  }
 
   const refresh = async () => {
     if (!api.getToken()) {
-      setUser(null);
+      applyUser(null);
       return;
     }
     try {
       const u = await api.fetchMe();
-      setUser(u);
+      applyUser(u);
       await refreshStore();
-    } catch {
-      api.setToken(null);
-      setUser(null);
+    } catch (err) {
+      if (err?.status === 401) {
+        api.setToken(null);
+        applyUser(null);
+      }
     }
   };
 
@@ -34,10 +59,10 @@ export function AuthProvider({ children }) {
       loading,
       refresh,
       login: async (identifier, password) => {
-        const { user: u } = await api.login(identifier, password);
-        setUser(u);
+        const { user: u, token } = await api.login(identifier, password);
+        persistSession(token, u);
         await refreshStore();
-        return u;
+        return api.normalizeUser(u);
       },
       signup: async (input) => {
         const employeeId = validateEmployeeId(input.employeeId);
@@ -50,20 +75,20 @@ export function AuthProvider({ children }) {
         };
         const trimmedEmail = input.email?.trim();
         if (trimmedEmail) payload.email = trimmedEmail;
-        const { user: u } = await api.signup(payload);
-        setUser(u);
+        const { user: u, token } = await api.signup(payload);
+        persistSession(token, u);
         await refreshStore();
-        return u;
+        return api.normalizeUser(u);
       },
       logout: () => {
         api.setToken(null);
-        setUser(null);
+        applyUser(null);
       },
       updateProfile: async (input) => {
         const u = await api.updateProfile(input);
-        setUser(u);
+        applyUser(u);
         await refreshStore();
-        return u;
+        return api.normalizeUser(u);
       },
     }),
     [user, loading]
