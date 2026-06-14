@@ -16,14 +16,6 @@ function readInitialUser() {
   return getStoredUser();
 }
 
-async function establishSession(token, u) {
-  api.setToken(token);
-  const normalized = api.normalizeUser(u);
-  setStoredUser(normalized);
-  await refreshStore(normalized.role, normalized);
-  return normalized;
-}
-
 export function AuthProvider({ children }) {
   const [user, setUserState] = useState(readInitialUser);
   const [loading, setLoading] = useState(() => typeof window !== "undefined" && isAuthenticated());
@@ -35,6 +27,11 @@ export function AuthProvider({ children }) {
     else clearAuthStorage();
   }
 
+  function persistSession(token, u) {
+    api.setToken(token);
+    applyUser(u);
+  }
+
   const refresh = async () => {
     if (!api.getToken()) {
       applyUser(null);
@@ -43,7 +40,7 @@ export function AuthProvider({ children }) {
     try {
       const u = await api.fetchMe();
       applyUser(u);
-      await refreshStore(u.role, u);
+      await refreshStore();
     } catch (err) {
       if (err?.status === 401) {
         api.setToken(null);
@@ -63,36 +60,25 @@ export function AuthProvider({ children }) {
       refresh,
       login: async (identifier, password) => {
         const { user: u, token } = await api.login(identifier, password);
-        try {
-          const normalized = await establishSession(token, u);
-          setUserState(normalized);
-          return normalized;
-        } catch (err) {
-          api.setToken(null);
-          applyUser(null);
-          throw err;
-        }
+        persistSession(token, u);
+        await refreshStore();
+        return api.normalizeUser(u);
       },
       signup: async (input) => {
         const employeeId = validateEmployeeId(input.employeeId);
         const payload = {
           name: input.name,
           password: input.password,
+          role: input.role,
           employeeId,
           phone: input.phone.trim(),
         };
         const trimmedEmail = input.email?.trim();
         if (trimmedEmail) payload.email = trimmedEmail;
         const { user: u, token } = await api.signup(payload);
-        try {
-          const normalized = await establishSession(token, u);
-          setUserState(normalized);
-          return normalized;
-        } catch (err) {
-          api.setToken(null);
-          applyUser(null);
-          throw err;
-        }
+        persistSession(token, u);
+        await refreshStore();
+        return api.normalizeUser(u);
       },
       logout: () => {
         api.setToken(null);
@@ -101,7 +87,7 @@ export function AuthProvider({ children }) {
       updateProfile: async (input) => {
         const u = await api.updateProfile(input);
         applyUser(u);
-        await refreshStore(u.role, u);
+        await refreshStore();
         return api.normalizeUser(u);
       },
     }),

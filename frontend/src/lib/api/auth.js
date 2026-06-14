@@ -5,6 +5,7 @@ export async function login(identifier, password) {
     method: "POST",
     body: JSON.stringify({ email: identifier.trim(), password }),
   });
+  setToken(data.token);
   return { user: normalizeUser(data.user), token: data.token };
 }
 
@@ -13,6 +14,7 @@ export async function signup(input) {
     method: "POST",
     body: JSON.stringify(input),
   });
+  setToken(data.token);
   return { user: normalizeUser(data.user), token: data.token };
 }
 

@@ -1,6 +1,6 @@
 import * as api from "@/lib/api";
 import { computeLeaveBalance, canRequestLeave } from "@/lib/utils/leave-balance";
-import { cache, DEFAULT_SETTINGS, emitChange } from "./cache";
+import { cache, emitChange } from "./cache";
 import { normAttendance, normLeave, normCompOff } from "./normalizers";
 
 export const store = {
@@ -23,27 +23,19 @@ function getUserById(userId) {
   );
 }
 
-export async function refreshStore(role, currentUser) {
-  const isAdmin = role === "admin";
-  const [attendance, leaves, compOffRequests] = await Promise.all([
+export async function refreshStore() {
+  const [users, attendance, leaves, compOffRequests, settings] = await Promise.all([
+    api.getEmployees(),
     api.getAttendance(),
     api.getLeaves(),
     api.getCompOffRequests(),
+    api.getSettings(),
   ]);
-
+  cache.users = users;
   cache.attendance = attendance.map(normAttendance);
   cache.leaves = leaves.map(normLeave);
   cache.compOffRequests = compOffRequests.map(normCompOff);
-
-  if (isAdmin) {
-    const [users, settings] = await Promise.all([api.getEmployees(), api.getSettings()]);
-    cache.users = users;
-    cache.settings = settings;
-  } else {
-    cache.users = currentUser ? [currentUser] : [];
-    cache.settings = { ...DEFAULT_SETTINGS };
-  }
-
+  cache.settings = settings;
   emitChange();
 }
 
