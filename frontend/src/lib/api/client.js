@@ -1,19 +1,28 @@
+import {
+  clearAuthStorage,
+  getStoredToken,
+  getStoredUser,
+  setStoredToken,
+  setStoredUser,
+} from "@/lib/auth-storage";
+
 const BASE = (import.meta.env.VITE_API_BASE_URL || "http://localhost:4000").replace(/\/$/, "");
-const TOKEN_KEY = "wf_token";
 
 export function getToken() {
-  return typeof window !== "undefined" ? localStorage.getItem(TOKEN_KEY) : null;
+  return getStoredToken();
 }
 
 export function setToken(token) {
-  if (typeof window === "undefined") return;
-  if (token) localStorage.setItem(TOKEN_KEY, token);
-  else localStorage.removeItem(TOKEN_KEY);
+  setStoredToken(token);
+  if (!token) setStoredUser(null);
 }
 
 export function normalizeUser(u) {
   if (!u) return null;
-  return { ...u, id: u._id || u.id };
+  const normalized = { ...u, id: u._id || u.id };
+  delete normalized._id;
+  delete normalized.passwordHash;
+  return normalized;
 }
 
 export async function request(path, options = {}) {
@@ -37,7 +46,11 @@ export async function request(path, options = {}) {
       data.message ||
       (Array.isArray(data.issues) ? data.issues[0]?.message : null) ||
       "Request failed";
-    throw new Error(msg);
+    const err = new Error(msg);
+    err.status = res.status;
+    throw err;
   }
   return data;
 }
+
+export { BASE as API_BASE_URL };

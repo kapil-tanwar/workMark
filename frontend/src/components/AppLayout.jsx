@@ -2,9 +2,10 @@ import { Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-route
 import { useAuth } from "@/lib/auth-context";
 import { useWorkflowRefresh } from "@/hooks/use-workflow-refresh";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { LayoutDashboard, Clock, CalendarDays, User as UserIcon, Users, ClipboardCheck, FileBarChart, Settings, LogOut, Search, Menu, X, Briefcase, } from "lucide-react";
-import { useEffect, useState } from "react";
+import { LayoutDashboard, Clock, CalendarDays, User as UserIcon, Users, ClipboardCheck, FileBarChart, Settings, LogOut, Search, Menu, X, Briefcase, Loader2, } from "lucide-react";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { getStoredUser, isAuthenticated } from "@/lib/auth-storage";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
@@ -29,13 +30,24 @@ export function AppLayout() {
     const path = useRouterState({ select: (s) => s.location.pathname });
     const [open, setOpen] = useState(false);
     useWorkflowRefresh();
-    useEffect(() => {
-        if (!loading && !user)
-            navigate({ to: "/login" });
-    }, [user, loading, navigate]);
-    if (!user)
+
+    const sessionUser = user || getStoredUser();
+
+    if (!isAuthenticated()) {
         return null;
-    const nav = user.role === "admin" ? adminNav : employeeNav;
+    }
+
+    if (loading && !sessionUser) {
+        return (<div className="min-h-screen flex items-center justify-center bg-background">
+          <Loader2 className="size-8 animate-spin text-primary"/>
+        </div>);
+    }
+
+    if (!sessionUser) {
+        return null;
+    }
+
+    const nav = sessionUser.role === "admin" ? adminNav : employeeNav;
     return (<div className="min-h-screen bg-background flex w-full">
       {/* Sidebar */}
       <aside className={cn("fixed lg:static inset-y-0 left-0 z-40 w-64 bg-sidebar border-r border-sidebar-border flex-col transition-transform", open ? "flex translate-x-0" : "hidden lg:flex -translate-x-full lg:translate-x-0")}>
@@ -45,7 +57,7 @@ export function AppLayout() {
           </div>
           <div>
             <div className="font-bold text-sidebar-foreground leading-none">WorkFlow HR</div>
-            <div className="text-[11px] text-muted-foreground mt-0.5 capitalize">{user.role} portal</div>
+            <div className="text-[11px] text-muted-foreground mt-0.5 capitalize">{sessionUser.role} portal</div>
           </div>
         </div>
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
@@ -95,7 +107,7 @@ export function AppLayout() {
               <button className="flex items-center gap-2 p-1 rounded-full hover:bg-muted">
                 <Avatar className="size-8">
                   <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
-                    {user.name
+                    {sessionUser.name
             .split(" ")
             .map((s) => s[0])
             .slice(0, 2)
@@ -103,17 +115,17 @@ export function AppLayout() {
                   </AvatarFallback>
                 </Avatar>
                 <div className="hidden sm:flex flex-col items-start mr-2">
-                  <span className="text-sm font-medium leading-none">{user.name}</span>
+                  <span className="text-sm font-medium leading-none">{sessionUser.name}</span>
                   <Badge variant="secondary" className="mt-1 h-4 text-[10px] capitalize px-1.5">
-                    {user.role}
+                    {sessionUser.role}
                   </Badge>
                 </div>
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>{user.email || user.phone || user.employeeId}</DropdownMenuLabel>
+              <DropdownMenuLabel>{sessionUser.email || sessionUser.phone || sessionUser.employeeId}</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              {user.role === "employee" && (<DropdownMenuItem onClick={() => navigate({ to: "/profile" })}>Profile</DropdownMenuItem>)}
+              {sessionUser.role === "employee" && (<DropdownMenuItem onClick={() => navigate({ to: "/profile" })}>Profile</DropdownMenuItem>)}
               <DropdownMenuItem onClick={() => {
             logout();
             navigate({ to: "/login" });

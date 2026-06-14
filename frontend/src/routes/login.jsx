@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, redirect } from "@tanstack/react-router";
 import { useState } from "react";
 import { Briefcase, UserRound, Lock, ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/lib/auth-context";
 import { AuthSplitLayout } from "@/components/auth/AuthSplitLayout";
 import { toast } from "sonner";
+import { getStoredUser, isAuthenticated } from "@/lib/auth-storage";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -16,6 +17,12 @@ export const Route = createFileRoute("/login")({
       { name: "description", content: "Sign in to your WorkFlow HR portal to manage attendance and leaves." },
     ],
   }),
+  beforeLoad: () => {
+    if (typeof window === "undefined") return;
+    if (!isAuthenticated()) return;
+    const user = getStoredUser();
+    throw redirect({ to: user?.role === "admin" ? "/admin" : "/dashboard", replace: true });
+  },
   component: LoginPage,
 });
 
@@ -48,7 +55,7 @@ function LoginPage() {
     try {
       const u = await login(identifier, password);
       toast.success(`Welcome back, ${u.name.split(" ")[0]}`);
-      navigate({ to: u.role === "admin" ? "/admin" : "/dashboard" });
+      await navigate({ to: u.role === "admin" ? "/admin" : "/dashboard", replace: true });
     } catch (err) {
       toast.error(err.message);
     } finally {
