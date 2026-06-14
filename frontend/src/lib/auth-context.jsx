@@ -41,14 +41,16 @@ export function AuthProvider({ children }) {
       },
       signup: async (input) => {
         const employeeId = validateEmployeeId(input.employeeId);
-        const { user: u } = await api.signup({
+        const payload = {
           name: input.name,
-          email: input.email?.trim() || "",
           password: input.password,
           role: input.role,
           employeeId,
           phone: input.phone.trim(),
-        });
+        };
+        const trimmedEmail = input.email?.trim();
+        if (trimmedEmail) payload.email = trimmedEmail;
+        const { user: u } = await api.signup(payload);
         setUser(u);
         await refreshStore();
         return u;

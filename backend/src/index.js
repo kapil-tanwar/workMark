@@ -67,6 +67,13 @@ app.use((err, _req, res, _next) => {
   if (err?.name === "ZodError") {
     return res.status(400).json({ error: err.issues?.[0]?.message || "Validation failed" });
   }
+  if (err?.code === 11000) {
+    const msg = String(err.message || "");
+    if (msg.includes("email")) return res.status(409).json({ error: "Email already registered" });
+    if (msg.includes("phone")) return res.status(409).json({ error: "Phone number already in use" });
+    if (msg.includes("employeeId")) return res.status(409).json({ error: "Employee ID already in use" });
+    return res.status(409).json({ error: "That value is already in use" });
+  }
   const status = err.status || 500;
   res.status(status).json({ error: err.message || "Server error" });
 });
