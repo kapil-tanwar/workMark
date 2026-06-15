@@ -15,7 +15,7 @@ import { ensureEarnedAccrualUpToDate, scheduleMonthlyAccrual } from "./utils/ear
 import { scheduleDailyAttendanceProcessing } from "./utils/dailyDutyScheduler.js";
 
 const app = express();
-const allowedOrigins = process.env.CORS_ORIGIN?.split(",") || [];
+const allowedOrigins = process.env.CORS_ORIGIN?.split(",").map(o => o.trim().replace(/\/$/, "")) || [];
 const corsOptions = {
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
