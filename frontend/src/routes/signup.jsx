@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, redirect } from "@tanstack/react-router";
 import { useState } from "react";
 import { Briefcase, Mail, Lock, User as UserIcon, Loader2, IdCard, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,8 +8,17 @@ import { useAuth } from "@/lib/auth-context";
 import { AuthSplitLayout } from "@/components/auth/AuthSplitLayout";
 import { toast } from "sonner";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { getSavedUser } from "@/lib/auth-helpers";
 
 export const Route = createFileRoute("/signup")({
+  beforeLoad: () => {
+    if (typeof window === "undefined") return;
+    const token = localStorage.getItem("wf_token");
+    const user = getSavedUser();
+    if (token && user) {
+      throw redirect({ to: user.role === "admin" ? "/admin" : "/dashboard" });
+    }
+  },
   head: () => ({ meta: [{ title: "Create account — WorkFlow HR" }] }),
   component: SignupPage,
 });

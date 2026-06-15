@@ -29,3 +29,17 @@ export function validateEmployeeId(employeeId) {
         throw new Error("Employee ID must be 2–32 characters");
     return norm;
 }
+
+export function getSavedUser() {
+    if (typeof window === "undefined")
+        return null;
+    const raw = localStorage.getItem("wf_user");
+    if (!raw)
+        return null;
+    try {
+        return JSON.parse(raw);
+    }
+    catch (e) {
+        return null;
+    }
+}

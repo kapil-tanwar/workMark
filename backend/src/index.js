@@ -12,6 +12,7 @@ import compOffRoutes from "./routes/compOff.js";
 import reportRoutes from "./routes/reports.js";
 import settingsRoutes from "./routes/settings.js";
 import { ensureEarnedAccrualUpToDate, scheduleMonthlyAccrual } from "./utils/earnedAccrual.js";
+import { scheduleDailyAttendanceProcessing } from "./utils/dailyDutyScheduler.js";
 
 const app = express();
 app.use(cors({ origin: process.env.CORS_ORIGIN?.split(",") ?? "*", credentials: true }));
@@ -43,6 +44,7 @@ async function start() {
     await connectDB();
     await ensureEarnedAccrualUpToDate();
     scheduleMonthlyAccrual();
+    scheduleDailyAttendanceProcessing();
     app.listen(PORT, () => console.log(`API ready on http://localhost:${PORT}`));
   } catch (err) {
     console.error("MongoDB connection error:", err.message);

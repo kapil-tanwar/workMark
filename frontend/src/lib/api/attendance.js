@@ -6,18 +6,25 @@ export async function getAttendance(params = {}) {
   return data.records || [];
 }
 
-export async function getTodayAttendance() {
-  const data = await request("/api/attendance/today");
+export async function getTodayAttendance(date) {
+  const qs = date ? `?date=${date}` : "";
+  const data = await request(`/api/attendance/today${qs}`);
   return data.record;
 }
 
-export async function checkIn() {
-  const data = await request("/api/attendance/check-in", { method: "POST" });
+export async function checkIn(date, time) {
+  const data = await request("/api/attendance/check-in", {
+    method: "POST",
+    body: JSON.stringify({ date, time }),
+  });
   return data.record;
 }
 
-export async function checkOut() {
-  const data = await request("/api/attendance/check-out", { method: "POST" });
+export async function checkOut(date, time) {
+  const data = await request("/api/attendance/check-out", {
+    method: "POST",
+    body: JSON.stringify({ date, time }),
+  });
   return data.record;
 }
 

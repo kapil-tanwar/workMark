@@ -2,19 +2,25 @@ import { Router } from "express";
 import Attendance from "../models/Attendance.js";
 import Leave from "../models/Leave.js";
 import User from "../models/User.js";
+import Settings from "../models/Settings.js";
 import { authRequired } from "../middleware/auth.js";
 import { computeLeaveBalance } from "../utils/leaveBalance.js";
 import { ensureEarnedAccrualUpToDate } from "../utils/earnedAccrual.js";
+import { getISTDateStr, getISTTimeStr } from "../utils/timezone.js";
 
 const router = Router();
 router.use(authRequired);
 
-const todayStr = () => new Date().toISOString().slice(0, 10);
-const isSunday = () => new Date().getDay() === 0;
-const nowHHmm = () => {
-  const d = new Date();
-  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+const todayStr = () => getISTDateStr();
+const isSunday = () => {
+  const dateStr = getISTDateStr();
+  return isSundayDate(dateStr);
 };
+const isSundayDate = (dateStr) => {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  return new Date(y, m - 1, d).getDay() === 0;
+};
+const nowHHmm = () => getISTTimeStr();
 
 router.get("/", async (req, res, next) => {
   try {
@@ -34,19 +40,33 @@ router.get("/", async (req, res, next) => {
 
 router.get("/today", async (req, res, next) => {
   try {
-    const rec = await Attendance.findOne({ user: req.user._id, date: todayStr() });
+    const date = req.query.date || todayStr();
+    const rec = await Attendance.findOne({ user: req.user._id, date });
     res.json({ record: rec });
   } catch (e) { next(e); }
 });
 
 router.post("/check-in", async (req, res, next) => {
   try {
-    if (isSunday()) return next({ status: 400, message: "Check-in is not available on Sundays" });
-    const date = todayStr();
-    const time = nowHHmm();
-    const now = new Date();
-    const late = now.getHours() > 9 || (now.getHours() === 9 && now.getMinutes() > 15);
+    const date = req.body.date || todayStr();
+    const time = req.body.time || nowHHmm();
+
+    if (isSundayDate(date)) return next({ status: 400, message: "Check-in is not available on Sundays" });
+
+    const settings = (await Settings.findOne({ key: "global" })) || (await Settings.create({ key: "global" }));
+    const parts = (settings.workingHours || "09:00 – 18:00").split(/[-–—]/).map(s => s.trim());
+    const dutyEndTime = parts[1] || "18:00";
+
+    // Auto-checkout any prior active check-ins
+    await Attendance.updateMany(
+      { user: req.user._id, date: { $ne: date }, checkIn: { $exists: true }, checkOut: { $exists: false } },
+      { $set: { checkOut: dutyEndTime } }
+    );
+
+    const [hours, minutes] = time.split(":").map(Number);
+    const late = hours > 9 || (hours === 9 && minutes > 15);
     const status = late ? "Late" : "Present";
+    
     const rec = await Attendance.findOneAndUpdate(
       { user: req.user._id, date },
       { $setOnInsert: { user: req.user._id, date }, $set: { checkIn: time, status } },
@@ -58,10 +78,14 @@ router.post("/check-in", async (req, res, next) => {
 
 router.post("/check-out", async (req, res, next) => {
   try {
-    if (isSunday()) return next({ status: 400, message: "Check-out is not available on Sundays" });
+    const date = req.body.date || todayStr();
+    const time = req.body.time || nowHHmm();
+
+    if (isSundayDate(date)) return next({ status: 400, message: "Check-out is not available on Sundays" });
+    
     const rec = await Attendance.findOneAndUpdate(
-      { user: req.user._id, date: todayStr() },
-      { $set: { checkOut: nowHHmm() } },
+      { user: req.user._id, date },
+      { $set: { checkOut: time } },
       { new: true }
     );
     if (!rec) return next({ status: 400, message: "No check-in for today" });

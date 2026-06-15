@@ -12,15 +12,18 @@ export function AuthProvider({ children }) {
   const refresh = async () => {
     if (!api.getToken()) {
       setUser(null);
+      localStorage.removeItem("wf_user");
       return;
     }
     try {
       const u = await api.fetchMe();
       setUser(u);
-      await refreshStore();
+      localStorage.setItem("wf_user", JSON.stringify(u));
+      await refreshStore(u);
     } catch {
       api.setToken(null);
       setUser(null);
+      localStorage.removeItem("wf_user");
     }
   };
 
@@ -36,7 +39,8 @@ export function AuthProvider({ children }) {
       login: async (identifier, password) => {
         const { user: u } = await api.login(identifier, password);
         setUser(u);
-        await refreshStore();
+        localStorage.setItem("wf_user", JSON.stringify(u));
+        await refreshStore(u);
         return u;
       },
       signup: async (input) => {
@@ -50,17 +54,20 @@ export function AuthProvider({ children }) {
           phone: input.phone.trim(),
         });
         setUser(u);
-        await refreshStore();
+        localStorage.setItem("wf_user", JSON.stringify(u));
+        await refreshStore(u);
         return u;
       },
       logout: () => {
         api.setToken(null);
         setUser(null);
+        localStorage.removeItem("wf_user");
       },
       updateProfile: async (input) => {
         const u = await api.updateProfile(input);
         setUser(u);
-        await refreshStore();
+        localStorage.setItem("wf_user", JSON.stringify(u));
+        await refreshStore(u);
         return u;
       },
     }),

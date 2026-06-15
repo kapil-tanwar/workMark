@@ -8,13 +8,16 @@ import { creditNewEmployeeEarnedLeave } from "../utils/earnedAccrual.js";
 const router = Router();
 router.use(authRequired);
 
-router.get("/", async (_req, res, next) => {
+router.get("/", adminOnly, async (_req, res, next) => {
   try { res.json({ employees: await User.find().sort({ createdAt: -1 }) }); }
   catch (e) { next(e); }
 });
 
 router.get("/:id", async (req, res, next) => {
   try {
+    if (req.user.role !== "admin" && String(req.user._id) !== req.params.id) {
+      return next({ status: 403, message: "Forbidden" });
+    }
     const u = await User.findById(req.params.id);
     if (!u) return next({ status: 404, message: "Not found" });
     res.json({ employee: u });

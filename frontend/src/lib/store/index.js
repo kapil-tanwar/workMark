@@ -2,6 +2,7 @@ import * as api from "@/lib/api";
 import { computeLeaveBalance, canRequestLeave } from "@/lib/utils/leave-balance";
 import { cache, emitChange } from "./cache";
 import { normAttendance, normLeave, normCompOff } from "./normalizers";
+import { getSavedUser } from "@/lib/auth-helpers";
 
 export const store = {
   getUsers: () => cache.users,
@@ -23,15 +24,17 @@ function getUserById(userId) {
   );
 }
 
-export async function refreshStore() {
+export async function refreshStore(user) {
+  const activeUser = user || getSavedUser();
+  const isAdmin = activeUser?.role === "admin";
   const [users, attendance, leaves, compOffRequests, settings] = await Promise.all([
-    api.getEmployees(),
+    isAdmin ? api.getEmployees() : Promise.resolve([]),
     api.getAttendance(),
     api.getLeaves(),
     api.getCompOffRequests(),
     api.getSettings(),
   ]);
-  cache.users = users;
+  cache.users = isAdmin ? users : (activeUser ? [activeUser] : []);
   cache.attendance = attendance.map(normAttendance);
   cache.leaves = leaves.map(normLeave);
   cache.compOffRequests = compOffRequests.map(normCompOff);
@@ -74,21 +77,30 @@ export function leaveBalanceWithPending(userId) {
 export { canRequestLeave };
 
 export async function checkIn() {
-  const record = await api.checkIn();
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const date = String(d.getDate()).padStart(2, "0");
+  const localDate = `${year}-${month}-${date}`;
+  const localTime = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+
+  const record = await api.checkIn(localDate, localTime);
   const norm = normAttendance(record);
-  const idx = cache.attendance.findIndex((a) => a.userId === norm.userId && a.date === norm.date);
-  if (idx >= 0) cache.attendance[idx] = norm;
-  else cache.attendance.unshift(norm);
-  emitChange();
+  await refreshStore();
   return norm;
 }
 
 export async function checkOut() {
-  const record = await api.checkOut();
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const date = String(d.getDate()).padStart(2, "0");
+  const localDate = `${year}-${month}-${date}`;
+  const localTime = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+
+  const record = await api.checkOut(localDate, localTime);
   const norm = normAttendance(record);
-  const idx = cache.attendance.findIndex((a) => a.userId === norm.userId && a.date === norm.date);
-  if (idx >= 0) cache.attendance[idx] = norm;
-  emitChange();
+  await refreshStore();
   return norm;
 }
 

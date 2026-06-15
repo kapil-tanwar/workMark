@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, redirect } from "@tanstack/react-router";
 import { useState } from "react";
 import { Briefcase, UserRound, Lock, ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,8 +8,17 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/lib/auth-context";
 import { AuthSplitLayout } from "@/components/auth/AuthSplitLayout";
 import { toast } from "sonner";
+import { getSavedUser } from "@/lib/auth-helpers";
 
 export const Route = createFileRoute("/login")({
+  beforeLoad: () => {
+    if (typeof window === "undefined") return;
+    const token = localStorage.getItem("wf_token");
+    const user = getSavedUser();
+    if (token && user) {
+      throw redirect({ to: user.role === "admin" ? "/admin" : "/dashboard" });
+    }
+  },
   head: () => ({
     meta: [
       { title: "Sign in — WorkFlow HR" },
