@@ -32,6 +32,7 @@ function ProfilePage() {
     phone: "",
     department: "",
     designation: "",
+    employeeId: "",
   });
 
   if (!user) return null;
@@ -43,6 +44,7 @@ function ProfilePage() {
       phone: user.phone || "",
       department: user.department || "",
       designation: user.designation || "",
+      employeeId: user.employeeId || "",
     });
     setEditOpen(true);
   }
@@ -147,6 +149,10 @@ function ProfilePage() {
             <DialogDescription>Update your personal and work details. Employee ID cannot be changed here.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label>Employee ID</Label>
+              <Input value={form.employeeId} disabled className="opacity-80" />
+            </div>
             <div className="space-y-1.5">
               <Label>Full name</Label>
               <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />

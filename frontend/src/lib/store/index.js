@@ -173,6 +173,8 @@ export async function saveEmployee(edit, form, password = "password") {
     designation: form.designation,
     phone: form.phone,
     email: form.email?.trim() || "",
+    earnedLeaves: Number(form.earnedLeaves ?? 0),
+    compOffLeaves: Number(form.compOffLeaves ?? 0),
   };
   if (edit) {
     const updated = await api.updateEmployee(edit.id, payload);

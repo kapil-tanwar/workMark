@@ -70,7 +70,7 @@ router.post("/signup", async (req, res, next) => {
       role: data.role,
       employeeId,
       phone,
-      department: data.department || (data.role === "admin" ? "Administration" : "General"),
+      department: data.department || "IT",
       designation: data.designation || (data.role === "admin" ? "Administrator" : "Team Member"),
     });
     if (user.role === "employee") await creditNewEmployeeEarnedLeave(user._id);
@@ -143,9 +143,38 @@ router.patch("/profile", authRequired, async (req, res, next) => {
   }
 });
 
-router.post("/forgot-password", async (req, res) => {
-  // Stub — wire up email provider in production.
-  res.json({ ok: true, message: "If the email exists, a reset link has been sent." });
+router.post("/forgot-password", async (req, res, next) => {
+  try {
+    const { identifier, phone, newPassword } = z
+      .object({
+        identifier: z.string().min(1),
+        phone: z.string().min(7).max(20),
+        newPassword: z.string().min(6).max(200),
+      })
+      .parse(req.body);
+
+    const idVal = identifier.trim();
+    const phoneVal = phone.trim();
+
+    const query = { phone: phoneVal };
+    if (idVal.includes("@")) {
+      query.email = idVal.toLowerCase();
+    } else {
+      query.employeeId = normalizeEmployeeId(idVal);
+    }
+
+    const user = await User.findOne(query);
+    if (!user) {
+      return next({ status: 404, message: "User not found with matching email/ID and phone number" });
+    }
+
+    user.passwordHash = await bcrypt.hash(newPassword, 10);
+    await user.save();
+
+    res.json({ ok: true, message: "Password has been reset successfully." });
+  } catch (e) {
+    next(e);
+  }
 });
 
 export default router;

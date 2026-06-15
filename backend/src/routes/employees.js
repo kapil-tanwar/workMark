@@ -33,6 +33,8 @@ const createSchema = z.object({
   department: z.string().optional(),
   designation: z.string().optional(),
   phone: z.string().min(7).max(20),
+  earnedLeaves: z.number().optional(),
+  compOffLeaves: z.number().optional(),
 });
 
 router.post("/", adminOnly, async (req, res, next) => {
@@ -47,15 +49,22 @@ router.post("/", adminOnly, async (req, res, next) => {
     const employeeId = data.employeeId.trim().toUpperCase();
     if (await User.findOne({ employeeId }))
       return next({ status: 409, message: "Employee ID already in use" });
-    const { password, email: _e, ...rest } = data;
+    const { password, email: _e, earnedLeaves, compOffLeaves, ...rest } = data;
     const u = await User.create({
       ...rest,
       ...(email ? { email } : {}),
       phone,
       employeeId,
       passwordHash: await bcrypt.hash(password, 10),
+      leaveBalances: {
+        earnedTotal: earnedLeaves !== undefined ? earnedLeaves : 0,
+        compOffTotal: compOffLeaves !== undefined ? compOffLeaves : 0,
+        lastEarnedAccrualAt: new Date()
+      }
     });
-    if (u.role === "employee") await creditNewEmployeeEarnedLeave(u._id);
+    if (u.role === "employee" && earnedLeaves === undefined) {
+      await creditNewEmployeeEarnedLeave(u._id);
+    }
     const employee = await User.findById(u._id);
     res.status(201).json({ employee });
   } catch (e) { next(e); }
@@ -71,6 +80,8 @@ const updateSchema = z.object({
   phone: z.string().min(7).max(20).optional(),
   password: z.string().min(6).optional(),
   active: z.boolean().optional(),
+  earnedLeaves: z.number().optional(),
+  compOffLeaves: z.number().optional(),
 });
 
 router.patch("/:id", adminOnly, async (req, res, next) => {
@@ -78,6 +89,15 @@ router.patch("/:id", adminOnly, async (req, res, next) => {
     const data = updateSchema.parse(req.body);
     const patch = { ...data };
     delete patch.email;
+    delete patch.earnedLeaves;
+    delete patch.compOffLeaves;
+
+    if (data.earnedLeaves !== undefined) {
+      patch["leaveBalances.earnedTotal"] = data.earnedLeaves;
+    }
+    if (data.compOffLeaves !== undefined) {
+      patch["leaveBalances.compOffTotal"] = data.compOffLeaves;
+    }
 
     if (data.email !== undefined) {
       const email = data.email?.trim() ? data.email.trim().toLowerCase() : undefined;

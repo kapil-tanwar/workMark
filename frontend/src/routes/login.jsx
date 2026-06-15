@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate, redirect } from "@tanstack/react-router";
 import { useState } from "react";
-import { Briefcase, UserRound, Lock, ArrowRight, Loader2 } from "lucide-react";
+import { Briefcase, UserRound, Lock, ArrowRight, Loader2, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -49,6 +49,7 @@ function LoginPage() {
   const navigate = useNavigate();
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   async function submit(e) {
@@ -67,12 +68,12 @@ function LoginPage() {
 
   return (
     <AuthSplitLayout aside={<LoginAside />}>
-      <div className="flex items-center gap-2 mb-2">
+      <Link to="/" className="flex items-center gap-2 mb-2 hover:opacity-90 transition-opacity w-fit">
         <div className="size-10 rounded-xl bg-primary flex items-center justify-center text-primary-foreground">
           <Briefcase className="size-5" />
         </div>
         <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-primary">WorkFlow HR</h1>
-      </div>
+      </Link>
       <h2 className="text-xl sm:text-2xl font-semibold mt-6 sm:mt-8">Welcome back</h2>
       <p className="text-sm text-muted-foreground mt-1">Sign in to access your attendance and leave dashboard.</p>
 
@@ -104,13 +105,20 @@ function LoginPage() {
             <Lock className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <Input
               id="password"
-              type="password"
+              type={showPassword ? "text" : "password"}
               required
               placeholder="••••••••"
-              className="pl-10 h-11"
+              className="pl-10 pr-10 h-11"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none"
+            >
+              {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+            </button>
           </div>
         </div>
         <div className="flex items-center gap-2">

@@ -34,7 +34,7 @@ export const Route = createFileRoute("/_app/admin/employees")({
   component: EmployeesPage,
 });
 
-const empty = { name: "", email: "", employeeId: "", department: "", designation: "", phone: "" };
+const empty = { name: "", email: "", employeeId: "", department: "", designation: "", phone: "", earnedLeaves: 0, compOffLeaves: 0 };
 
 function EmployeesPage() {
   useWorkflowRefresh();
@@ -69,6 +69,8 @@ function EmployeesPage() {
       department: u.department,
       designation: u.designation,
       phone: u.phone,
+      earnedLeaves: u.leaveBalances?.earnedTotal ?? 0,
+      compOffLeaves: u.leaveBalances?.compOffTotal ?? 0,
     });
     setOpen(true);
   }
@@ -170,6 +172,26 @@ function EmployeesPage() {
                 <div className="col-span-2 space-y-1.5">
                   <Label>Phone</Label>
                   <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Earned Leaves</Label>
+                  <Input
+                    type="number"
+                    step="0.5"
+                    min="0"
+                    value={form.earnedLeaves}
+                    onChange={(e) => setForm({ ...form, earnedLeaves: parseFloat(e.target.value) || 0 })}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Comp-off Leaves</Label>
+                  <Input
+                    type="number"
+                    step="0.5"
+                    min="0"
+                    value={form.compOffLeaves}
+                    onChange={(e) => setForm({ ...form, compOffLeaves: parseFloat(e.target.value) || 0 })}
+                  />
                 </div>
               </div>
               <DialogFooter>

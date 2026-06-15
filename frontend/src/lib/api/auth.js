@@ -28,9 +28,9 @@ export async function updateProfile(body) {
   return normalizeUser(data.user);
 }
 
-export async function forgotPassword(email) {
+export async function forgotPassword({ identifier, phone, newPassword }) {
   return request("/api/auth/forgot-password", {
     method: "POST",
-    body: JSON.stringify({ email }),
+    body: JSON.stringify({ identifier, phone, newPassword }),
   });
 }
