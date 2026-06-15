@@ -15,7 +15,18 @@ import { ensureEarnedAccrualUpToDate, scheduleMonthlyAccrual } from "./utils/ear
 import { scheduleDailyAttendanceProcessing } from "./utils/dailyDutyScheduler.js";
 
 const app = express();
-app.use(cors({ origin: process.env.CORS_ORIGIN?.split(",") ?? "*", credentials: true }));
+const allowedOrigins = process.env.CORS_ORIGIN?.split(",") || [];
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error("Not allowed by CORS"));
+  },
+  credentials: true
+};
+app.use(cors(corsOptions));
 app.use(express.json({ limit: "1mb" }));
 app.use(morgan("dev"));
 
