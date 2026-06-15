@@ -14,11 +14,46 @@ import settingsRoutes from "./routes/settings.js";
 import { ensureEarnedAccrualUpToDate, scheduleMonthlyAccrual } from "./utils/earnedAccrual.js";
 import { scheduleDailyAttendanceProcessing } from "./utils/dailyDutyScheduler.js";
 
+function normalizeOrigin(origin) {
+  return String(origin || "").trim().replace(/\/$/, "");
+}
+
+function getCorsOrigins() {
+  return (process.env.CORS_ORIGIN || "")
+    .split(",")
+    .map(normalizeOrigin)
+    .filter(Boolean);
+}
+
 const app = express();
-app.use(cors({ origin: process.env.CORS_ORIGIN?.split(",") ?? "*", credentials: true }));
+app.set("trust proxy", 1);
+
+const corsOrigins = getCorsOrigins();
+
+app.use(
+  cors({
+    origin(origin, callback) {
+      // Non-browser clients (curl, health checks) have no Origin header
+      if (!origin) return callback(null, true);
+      if (!corsOrigins.length) return callback(null, true);
+
+      const requestOrigin = normalizeOrigin(origin);
+      if (corsOrigins.includes(requestOrigin)) {
+        return callback(null, true);
+      }
+
+      console.warn(`CORS blocked origin: ${origin}. Allowed: ${corsOrigins.join(", ")}`);
+      return callback(new Error(`Origin ${origin} not allowed by CORS`));
+    },
+    credentials: true,
+  })
+);
 app.use(express.json({ limit: "1mb" }));
 app.use(morgan("dev"));
 
+app.get("/", (_req, res) =>
+  res.json({ ok: true, service: "WorkFlow HR API", health: "/health" })
+);
 app.get("/health", (_req, res) => res.json({ ok: true, db: getDBStatus() }));
 
 app.use("/api/auth", authRoutes);
@@ -33,6 +68,13 @@ app.use((err, _req, res, _next) => {
   if (err?.name === "ZodError") {
     return res.status(400).json({ error: err.issues?.[0]?.message || "Validation failed" });
   }
+  if (err?.code === 11000) {
+    const msg = String(err.message || "");
+    if (msg.includes("email")) return res.status(409).json({ error: "Email already registered" });
+    if (msg.includes("phone")) return res.status(409).json({ error: "Phone number already in use" });
+    if (msg.includes("employeeId")) return res.status(409).json({ error: "Employee ID already in use" });
+    return res.status(409).json({ error: "That value is already in use" });
+  }
   const status = err.status || 500;
   res.status(status).json({ error: err.message || "Server error" });
 });
@@ -40,12 +82,18 @@ app.use((err, _req, res, _next) => {
 const PORT = process.env.PORT || 4000;
 
 async function start() {
+  if (process.env.NODE_ENV === "production" && !process.env.JWT_SECRET) {
+    console.error("JWT_SECRET is required in production");
+    process.exit(1);
+  }
+
   try {
     await connectDB();
     await ensureEarnedAccrualUpToDate();
     scheduleMonthlyAccrual();
     scheduleDailyAttendanceProcessing();
     app.listen(PORT, () => console.log(`API ready on http://localhost:${PORT}`));
+
   } catch (err) {
     console.error("MongoDB connection error:", err.message);
     if (err.code === "ENOTFOUND" || String(err.message).includes("querySrv")) {

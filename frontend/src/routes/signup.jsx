@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { getSavedUser } from "@/lib/auth-helpers";
 
+
 export const Route = createFileRoute("/signup")({
   beforeLoad: () => {
     if (typeof window === "undefined") return;
@@ -20,6 +21,12 @@ export const Route = createFileRoute("/signup")({
     }
   },
   head: () => ({ meta: [{ title: "Create account — WorkFlow HR" }] }),
+  beforeLoad: () => {
+    if (typeof window === "undefined") return;
+    if (!isAuthenticated()) return;
+    const user = getStoredUser();
+    throw redirect({ to: user?.role === "admin" ? "/admin" : "/dashboard", replace: true });
+  },
   component: SignupPage,
 });
 
@@ -51,7 +58,7 @@ function SignupPage() {
     try {
       const u = await signup({ name, email, password, role, employeeId, phone });
       toast.success("Account created");
-      navigate({ to: u.role === "admin" ? "/admin" : "/dashboard" });
+      await navigate({ to: u.role === "admin" ? "/admin" : "/dashboard", replace: true });
     } catch (err) {
       toast.error(err.message);
     } finally {

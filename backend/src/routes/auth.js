@@ -9,7 +9,8 @@ import { creditNewEmployeeEarnedLeave } from "../utils/earnedAccrual.js";
 const router = Router();
 
 function sign(user) {
-  return jwt.sign({ sub: user.id, role: user.role }, process.env.JWT_SECRET, {
+  const id = user._id || user.id;
+  return jwt.sign({ sub: String(id), role: user.role }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_IN || "7d",
   });
 }

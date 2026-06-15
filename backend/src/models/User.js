@@ -12,7 +12,7 @@ const LeaveBalancesSchema = new mongoose.Schema(
 const UserSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
-    email: { type: String, unique: true, sparse: true, lowercase: true, index: true },
+    email: { type: String, lowercase: true, trim: true },
     passwordHash: { type: String, required: true },
     role: { type: String, enum: ["admin", "employee"], default: "employee" },
     employeeId: { type: String, unique: true, sparse: true },
@@ -24,6 +24,19 @@ const UserSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// Only index real emails — many users can omit email (sign up with phone + employee ID only)
+UserSchema.index(
+  { email: 1 },
+  { unique: true, partialFilterExpression: { email: { $exists: true, $type: "string", $gt: "" } } }
+);
+
+UserSchema.pre("validate", function stripEmptyEmail(next) {
+  if (this.email === "" || this.email == null) {
+    this.email = undefined;
+  }
+  next();
+});
 
 UserSchema.methods.toJSON = function () {
   const o = this.toObject();
