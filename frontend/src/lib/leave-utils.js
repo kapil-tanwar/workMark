@@ -1,7 +1,9 @@
 export const LEAVE_TYPES = ["Earned Leave", "Comp-Off Leave"];
 
 export function leaveRequestDays(startDate, endDate, duration = "full") {
-  if (startDate === endDate && duration === "half") return 0.5;
+  if (duration === "half" || duration === "0.5") return 0.5;
+  const parsed = parseFloat(duration);
+  if (!isNaN(parsed) && duration !== "full") return parsed;
   const a = new Date(startDate).getTime();
   const b = new Date(endDate).getTime();
   return Math.max(1, Math.round((b - a) / 86400000) + 1);
@@ -49,7 +51,8 @@ export function computeLeaveBalance(user, leaves, { includePending = true } = {}
 }
 
 export function canRequestLeave(user, leaves, type, startDate, endDate, duration = "full") {
-  if (duration === "half" && startDate !== endDate) {
+  const isHalf = duration === "half" || parseFloat(duration) === 0.5;
+  if (isHalf && startDate !== endDate) {
     return { ok: false, message: "Half-day leave must be for a single date." };
   }
   const requested = leaveRequestDays(startDate, endDate, duration);

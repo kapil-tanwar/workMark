@@ -40,7 +40,7 @@ const createSchema = z.object({
   type: z.enum(["Earned Leave", "Comp-Off Leave"]),
   startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  duration: z.enum(["half", "full"]).default("full"),
+  duration: z.string().default("full"),
   reason: z.string().min(1).max(500),
 });
 
@@ -59,7 +59,8 @@ router.post("/", async (req, res, next) => {
     if (data.endDate < data.startDate) {
       return next({ status: 400, message: "End date must be on or after start date" });
     }
-    if (data.duration === "half" && data.startDate !== data.endDate) {
+    const isHalf = data.duration === "half" || parseFloat(data.duration) === 0.5;
+    if (isHalf && data.startDate !== data.endDate) {
       return next({ status: 400, message: "Half-day leave must be for a single date" });
     }
     const check = await validateLeaveRequest(

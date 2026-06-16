@@ -34,7 +34,7 @@ export const Route = createFileRoute("/_app/admin/employees")({
   component: EmployeesPage,
 });
 
-const empty = { name: "", email: "", employeeId: "", department: "", designation: "", phone: "", earnedLeaves: 0, compOffLeaves: 0 };
+const empty = { name: "", email: "", employeeId: "", department: "", designation: "", phone: "", earnedLeaves: 0, compOffLeaves: 0, password: "" };
 
 function EmployeesPage() {
   useWorkflowRefresh();
@@ -56,7 +56,7 @@ function EmployeesPage() {
 
   function openCreate() {
     setEdit(null);
-    setForm(empty);
+    setForm({ ...empty, password: "password" });
     setOpen(true);
   }
 
@@ -71,6 +71,7 @@ function EmployeesPage() {
       phone: u.phone,
       earnedLeaves: u.leaveBalances?.earnedTotal ?? 0,
       compOffLeaves: u.leaveBalances?.compOffTotal ?? 0,
+      password: "",
     });
     setOpen(true);
   }
@@ -87,9 +88,14 @@ function EmployeesPage() {
       toast.error(err.message);
       return;
     }
+    const tempPassword = form.password?.trim() || "password";
+    if (!edit && tempPassword.length < 6) {
+      toast.error("Temporary password must be at least 6 characters");
+      return;
+    }
     setSaving(true);
     try {
-      await saveEmployee(edit, { ...form, employeeId });
+      await saveEmployee(edit, { ...form, employeeId }, tempPassword);
       toast.success(edit ? "Employee updated" : "Employee added");
       setOpen(false);
     } catch (err) {
@@ -173,6 +179,17 @@ function EmployeesPage() {
                   <Label>Phone</Label>
                   <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
                 </div>
+                {!edit && (
+                  <div className="col-span-2 space-y-1.5">
+                    <Label>Temporary Password</Label>
+                    <Input
+                      type="text"
+                      placeholder="Default: password"
+                      value={form.password}
+                      onChange={(e) => setForm({ ...form, password: e.target.value })}
+                    />
+                  </div>
+                )}
                 <div className="space-y-1.5">
                   <Label>Earned Leaves</Label>
                   <Input

@@ -28,12 +28,22 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Plus, X, Clock } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { formatLeaveDays } from "@/lib/leave-utils";
+import { formatLeaveDays, leaveRequestDays } from "@/lib/leave-utils";
 
 export const Route = createFileRoute("/_app/leave")({
   head: () => ({ meta: [{ title: "Leave Management — WorkFlow HR" }] }),
   component: LeavePage,
 });
+
+function formatDuration(duration) {
+  if (duration === "half") return "Half day";
+  if (duration === "full") return "Full day";
+  const num = parseFloat(duration);
+  if (isNaN(num)) return duration || "Full day";
+  if (num === 0.5) return "Half day";
+  if (num === 1) return "Full day";
+  return `${num} days`;
+}
 
 function LeavePage() {
   const { user } = useAuth();
@@ -41,7 +51,7 @@ function LeavePage() {
   const [open, setOpen] = useState(false);
   const [compOffOpen, setCompOffOpen] = useState(false);
   const [type, setType] = useState("Earned Leave");
-  const [leaveDuration, setLeaveDuration] = useState("full");
+  const [leaveDuration, setLeaveDuration] = useState(1);
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
   const [reason, setReason] = useState("");
@@ -65,6 +75,22 @@ function LeavePage() {
 
   const bal = leaveBalanceWithPending(user.id);
 
+  const handleStartDateChange = (e) => {
+    const val = e.target.value;
+    setStart(val);
+    if (val && end && val <= end) {
+      setLeaveDuration(leaveRequestDays(val, end, "full"));
+    }
+  };
+
+  const handleEndDateChange = (e) => {
+    const val = e.target.value;
+    setEnd(val);
+    if (start && val && start <= val) {
+      setLeaveDuration(leaveRequestDays(start, val, "full"));
+    }
+  };
+
   async function handleSubmit() {
     if (!start || !end || !reason) {
       toast.error("Fill all required fields");
@@ -74,19 +100,19 @@ function LeavePage() {
       toast.error("End date must be on or after start date");
       return;
     }
-    if (leaveDuration === "half" && start !== end) {
+    if (leaveDuration === 0.5 && start !== end) {
       toast.error("Half-day leave must be for a single date");
       return;
     }
     setSubmitting(true);
     try {
-      const endDate = leaveDuration === "half" ? start : end;
+      const endDate = leaveDuration === 0.5 ? start : end;
       await submitLeave({
         userId: user.id,
         type,
         startDate: start,
         endDate,
-        duration: leaveDuration,
+        duration: String(leaveDuration),
         reason,
       });
       toast.success("Leave request submitted");
@@ -94,7 +120,7 @@ function LeavePage() {
       setReason("");
       setStart("");
       setEnd("");
-      setLeaveDuration("full");
+      setLeaveDuration(1);
     } catch (err) {
       toast.error(err.message);
     } finally {
@@ -233,25 +259,53 @@ function LeavePage() {
                       Available: {formatLeaveDays(Math.max(0, bal.remainingByType[type] ?? 0))} day(s)
                     </p>
                   </div>
-                  <div className="space-y-1.5">
-                    <Label>Duration</Label>
-                    <Select
-                      value={leaveDuration}
-                      onValueChange={(v) => {
-                        setLeaveDuration(v);
-                        if (v === "half" && start) setEnd(start);
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="full">Full day</SelectItem>
-                        <SelectItem value="half">Half day (0.5)</SelectItem>
-                      </SelectContent>
-                    </Select>
+                   <div className="space-y-1.5">
+                    <Label>Duration (days)</Label>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="h-10 w-10 shrink-0 font-bold select-none"
+                        disabled={leaveDuration <= 0.5}
+                        onClick={() => {
+                          const nextVal = Math.max(0.5, leaveDuration - 0.5);
+                          setLeaveDuration(nextVal);
+                          if (nextVal === 0.5 && start) {
+                            setEnd(start);
+                          }
+                        }}
+                      >
+                        -
+                      </Button>
+                      <Input
+                        type="number"
+                        step="0.5"
+                        min="0.5"
+                        className="text-center font-semibold text-lg h-10"
+                        value={leaveDuration}
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value);
+                          if (!isNaN(val)) {
+                            setLeaveDuration(val);
+                            if (val === 0.5 && start) {
+                              setEnd(start);
+                            }
+                          }
+                        }}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="h-10 w-10 shrink-0 font-bold select-none"
+                        onClick={() => setLeaveDuration(leaveDuration + 0.5)}
+                      >
+                        +
+                      </Button>
+                    </div>
                   </div>
-                  {leaveDuration === "half" ? (
+                  {leaveDuration === 0.5 ? (
                     <div className="space-y-1.5">
                       <Label>Date</Label>
                       <Input
@@ -267,11 +321,11 @@ function LeavePage() {
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1.5">
                         <Label>Start date</Label>
-                        <Input type="date" value={start} onChange={(e) => setStart(e.target.value)} />
+                        <Input type="date" value={start} onChange={handleStartDateChange} />
                       </div>
                       <div className="space-y-1.5">
                         <Label>End date</Label>
-                        <Input type="date" value={end} onChange={(e) => setEnd(e.target.value)} />
+                        <Input type="date" value={end} onChange={handleEndDateChange} />
                       </div>
                     </div>
                   )}
@@ -304,7 +358,6 @@ function LeavePage() {
           <div className="text-xs font-semibold uppercase tracking-wider opacity-80">Earned Leave</div>
           <div className="mt-2 text-3xl font-bold">
             {formatLeaveDays(Math.max(0, bal.earned.remaining))}
-            <span className="text-base opacity-60"> / {formatLeaveDays(bal.earned.total)}</span>
           </div>
           <p className="text-xs mt-1 opacity-70">
             {formatLeaveDays(Math.max(0, bal.earned.remaining))} left · +1.5 added on 1st of each month
@@ -315,10 +368,9 @@ function LeavePage() {
           <div className="text-xs font-semibold uppercase tracking-wider opacity-80">Comp-Off Leave</div>
           <div className="mt-2 text-3xl font-bold">
             {formatLeaveDays(Math.max(0, bal.compOff.remaining))}
-            <span className="text-base opacity-60"> / {formatLeaveDays(bal.compOff.total)}</span>
           </div>
           <p className="text-xs mt-1 opacity-70">
-            {formatLeaveDays(Math.max(0, bal.compOff.remaining))} comp-off left of {formatLeaveDays(bal.compOff.total)} total
+            {formatLeaveDays(Math.max(0, bal.compOff.remaining))} comp-off left
           </p>
         </div>
 
@@ -357,7 +409,7 @@ function LeavePage() {
                 leaves.map((l) => (
                   <TableRow key={l.id}>
                     <TableCell className="font-medium">{l.type}</TableCell>
-                    <TableCell>{l.duration === "half" ? "Half day" : "Full day"}</TableCell>
+                    <TableCell>{formatDuration(l.duration)}</TableCell>
                     <TableCell>{l.startDate}</TableCell>
                     <TableCell>{l.endDate}</TableCell>
                     <TableCell className="max-w-[240px] truncate text-muted-foreground">{l.reason}</TableCell>

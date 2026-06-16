@@ -15,9 +15,19 @@ export const Route = createFileRoute("/_app/admin/leaves")({
   component: AdminLeaves,
 });
 
+function formatDuration(duration) {
+  if (duration === "half") return "Half day";
+  if (duration === "full") return "Full day";
+  const num = parseFloat(duration);
+  if (isNaN(num)) return duration || "Full day";
+  if (num === 0.5) return "Half day";
+  if (num === 1) return "Full day";
+  return `${num} days`;
+}
+
 function AdminLeaves() {
   useWorkflowRefresh();
-  const [section, setSection] = useState("leave");
+  const [section, setSection] = useState("all");
   const [tab, setTab] = useState("Pending");
   const [busy, setBusy] = useState(null);
 
@@ -31,6 +41,11 @@ function AdminLeaves() {
     .getCompOffRequests()
     .filter((r) => tab === "All" || r.status === tab)
     .sort((a, b) => (a.appliedAt < b.appliedAt ? 1 : -1));
+
+  const allRequests = [
+    ...leaves.map((l) => ({ ...l, kind: "leave" })),
+    ...compOffRequests.map((r) => ({ ...r, kind: "compoff" })),
+  ].sort((a, b) => (a.appliedAt < b.appliedAt ? 1 : -1));
 
   async function handleDecideLeave(id, status) {
     setBusy(id);
@@ -62,6 +77,7 @@ function AdminLeaves() {
 
       <Tabs value={section} onValueChange={setSection}>
         <TabsList>
+          <TabsTrigger value="all">All requests</TabsTrigger>
           <TabsTrigger value="leave">Leave requests</TabsTrigger>
           <TabsTrigger value="compoff">Comp-off credits</TabsTrigger>
         </TabsList>
@@ -76,7 +92,94 @@ function AdminLeaves() {
         </TabsList>
       </Tabs>
 
-      {section === "leave" ? (
+      {section === "all" ? (
+        <div className="bg-card border border-border rounded-xl overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Employee</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Duration</TableHead>
+                <TableHead>Date(s)</TableHead>
+                <TableHead>Reason</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {allRequests.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center text-muted-foreground py-12">
+                    No requests
+                  </TableCell>
+                </TableRow>
+              ) : (
+                allRequests.map((item) => {
+                  const u = users.find((x) => x.id === item.userId);
+                  return (
+                    <TableRow key={`${item.kind}-${item.id}`}>
+                      <TableCell>
+                        <div className="font-medium">{item.userName || u?.name}</div>
+                        <div className="text-xs text-muted-foreground">{item.userDepartment || u?.department}</div>
+                      </TableCell>
+                      <TableCell>{item.kind === "leave" ? item.type : "Comp-off Credit"}</TableCell>
+                      <TableCell>
+                        {item.kind === "leave"
+                          ? formatDuration(item.duration)
+                          : item.duration === "half"
+                            ? "Half day"
+                            : "Full day"}
+                      </TableCell>
+                      <TableCell>
+                        {item.kind === "leave"
+                          ? item.startDate === item.endDate
+                            ? item.startDate
+                            : `${item.startDate} to ${item.endDate}`
+                          : item.overtimeDate}
+                      </TableCell>
+                      <TableCell className="max-w-[240px] truncate text-muted-foreground">{item.reason}</TableCell>
+                      <TableCell>
+                        <StatusBadge status={item.status} />
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {item.status === "Pending" ? (
+                          <div className="flex gap-1 justify-end">
+                            <Button
+                              size="sm"
+                              disabled={busy === item.id}
+                              onClick={() =>
+                                item.kind === "leave"
+                                  ? handleDecideLeave(item.id, "Approved")
+                                  : handleDecideCompOff(item.id, "Approved")
+                              }
+                            >
+                              <Check className="size-4" /> Approve
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={busy === item.id}
+                              onClick={() =>
+                                item.kind === "leave"
+                                  ? handleDecideLeave(item.id, "Rejected")
+                                  : handleDecideCompOff(item.id, "Rejected")
+                              }
+                            >
+                              <X className="size-4" /> Reject
+                            </Button>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      ) : section === "leave" ? (
         <div className="bg-card border border-border rounded-xl overflow-hidden">
           <Table>
             <TableHeader>
@@ -108,7 +211,7 @@ function AdminLeaves() {
                         <div className="text-xs text-muted-foreground">{l.userDepartment || u?.department}</div>
                       </TableCell>
                       <TableCell>{l.type}</TableCell>
-                      <TableCell>{l.duration === "half" ? "Half day" : "Full day"}</TableCell>
+                      <TableCell>{formatDuration(l.duration)}</TableCell>
                       <TableCell>{l.startDate}</TableCell>
                       <TableCell>{l.endDate}</TableCell>
                       <TableCell className="max-w-[240px] truncate text-muted-foreground">{l.reason}</TableCell>
