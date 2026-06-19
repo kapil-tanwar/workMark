@@ -30,16 +30,15 @@ function FieldInput({ icon: Icon, type = "text", rightSlot, value, onChange, pla
   const [focused, setFocused] = useState(false);
   return (
     <div className={`relative ${className}`}>
-      <Icon className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 pointer-events-none z-10"
-        style={{ color: focused ? S.primary : S.placeholder }} />
+      <Icon className={cn("absolute left-3.5 top-1/2 -translate-y-1/2 size-4 pointer-events-none z-10", focused ? "text-primary" : "text-muted-foreground")} />
       <input
         {...rest} type={type} value={value} onChange={onChange} placeholder={placeholder}
-        className="w-full h-11 pl-10 pr-4 rounded-xl text-sm border outline-none transition-all"
-        style={{
-          background: S.bg, borderColor: focused ? S.primary : S.border, color: S.text,
-          boxShadow: focused ? "0 0 0 1px rgba(221,225,255,0.15)" : "none",
-          paddingRight: rightSlot ? "2.75rem" : undefined,
-        }}
+        className={cn(
+          "w-full h-11 pl-10 pr-4 rounded-xl text-sm border outline-none transition-all",
+          "bg-transparent dark:bg-background text-foreground border-input placeholder:text-muted-foreground",
+          focused ? "ring-1 ring-primary border-primary" : ""
+        )}
+        style={{ paddingRight: rightSlot ? "2.75rem" : undefined }}
         onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
       />
       {rightSlot}
@@ -52,35 +51,31 @@ function EmployeeFormModal({ open, onOpenChange, edit, form, setForm, onSave, sa
   return (
     <div
       className={cn(
-        "fixed inset-0 z-50 flex items-center justify-center p-4 transition-all duration-200",
+        "fixed inset-0 z-50 flex items-center justify-center p-4 transition-all duration-200 bg-black/80",
         open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
       )}
-      style={{ backdropFilter: "blur(8px)", background: "rgba(12,14,16,0.75)" }}
+      style={{ backdropFilter: "blur(8px)" }}
       onClick={(e) => { if (e.target === e.currentTarget) onOpenChange(false); }}
     >
       <div
-        className="w-full max-w-2xl rounded-2xl border overflow-hidden"
+        className="w-full max-w-2xl rounded-2xl border border-border bg-card overflow-hidden shadow-[0_20px_50px_-12px_rgba(0,0,0,0.7)]"
         style={{
-          background: S.card, borderColor: S.outlineVariant,
-          boxShadow: "0 20px 50px -12px rgba(0,0,0,0.7)",
           transform: open ? "scale(1)" : "scale(0.97)",
           transition: "transform 0.2s, opacity 0.2s",
         }}
       >
         {/* Header */}
-        <div className="px-7 py-5 border-b flex justify-between items-start"
-          style={{ background: S.surface, borderColor: S.outlineVariant }}>
+        <div className="px-7 py-5 border-b border-border/40 flex justify-between items-start bg-background">
           <div>
-            <h2 className="font-headline text-lg font-bold" style={{ color: S.text }}>
+            <h2 className="font-headline text-lg font-bold text-foreground">
               {edit ? "Edit Employee" : "Add New Employee"}
             </h2>
-            <p className="text-sm mt-0.5" style={{ color: S.muted }}>
+            <p className="text-sm mt-0.5 text-muted-foreground">
               {edit ? "Update the employee's profile details." : "Fill in the details to create a new profile."}
             </p>
           </div>
           <button onClick={() => onOpenChange(false)}
-            className="rounded-full p-1.5 transition-colors hover:opacity-70"
-            style={{ color: S.muted }}>
+            className="rounded-full p-1.5 transition-colors text-muted-foreground hover:opacity-70">
             <X className="size-4" />
           </button>
         </div>
@@ -90,12 +85,12 @@ function EmployeeFormModal({ open, onOpenChange, edit, form, setForm, onSave, sa
           {/* Row 1: Full Name + Email */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-[11px] font-bold uppercase tracking-widest" style={{ color: S.muted }}>Full Name</label>
+              <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Full Name</label>
               <FieldInput icon={User} placeholder="e.g. John Doe" value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })} />
             </div>
             <div className="space-y-1.5">
-              <label className="text-[11px] font-bold uppercase tracking-widest" style={{ color: S.muted }}>Email Address <span className="opacity-50 normal-case font-normal">Optional</span></label>
+              <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Email Address <span className="opacity-50 normal-case font-normal">Optional</span></label>
               <FieldInput icon={Mail} type="email" placeholder="john@company.com" value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })} />
             </div>
@@ -104,12 +99,12 @@ function EmployeeFormModal({ open, onOpenChange, edit, form, setForm, onSave, sa
           {/* Row 2: Employee ID + Phone */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-[11px] font-bold uppercase tracking-widest" style={{ color: S.muted }}>Employee ID</label>
+              <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Employee ID</label>
               <FieldInput icon={CreditCard} placeholder="EMP-1001" className="uppercase" value={form.employeeId}
                 onChange={(e) => setForm({ ...form, employeeId: e.target.value })} />
             </div>
             <div className="space-y-1.5">
-              <label className="text-[11px] font-bold uppercase tracking-widest" style={{ color: S.muted }}>Phone Number</label>
+              <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Phone Number</label>
               <FieldInput icon={Phone} type="tel" placeholder="+1 (555) 000-0000" value={form.phone}
                 onChange={(e) => setForm({ ...form, phone: e.target.value })} />
             </div>
@@ -118,12 +113,12 @@ function EmployeeFormModal({ open, onOpenChange, edit, form, setForm, onSave, sa
           {/* Row 3: Department + Designation */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-[11px] font-bold uppercase tracking-widest" style={{ color: S.muted }}>Department</label>
+              <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Department</label>
               <FieldInput icon={Building2} placeholder="e.g. Engineering" value={form.department}
                 onChange={(e) => setForm({ ...form, department: e.target.value })} />
             </div>
             <div className="space-y-1.5">
-              <label className="text-[11px] font-bold uppercase tracking-widest" style={{ color: S.muted }}>Designation</label>
+              <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Designation</label>
               <FieldInput icon={Briefcase} placeholder="e.g. Senior Developer" value={form.designation}
                 onChange={(e) => setForm({ ...form, designation: e.target.value })} />
             </div>
@@ -132,34 +127,33 @@ function EmployeeFormModal({ open, onOpenChange, edit, form, setForm, onSave, sa
           {/* Password (create only) */}
           {!edit && (
             <div className="space-y-1.5">
-              <label className="text-[11px] font-bold uppercase tracking-widest" style={{ color: S.muted }}>Temporary Password</label>
+              <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Temporary Password</label>
               <FieldInput
                 icon={Lock} type={showPw ? "text" : "password"}
                 placeholder="At least 6 characters" value={form.password}
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
                 rightSlot={
                   <button type="button" onClick={() => setShowPw(!showPw)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 z-10 hover:opacity-70 transition-opacity"
-                    style={{ color: S.placeholder }}>
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 z-10 hover:opacity-70 transition-opacity text-muted-foreground">
                     {showPw ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                   </button>
                 }
               />
-              <p className="text-[11px] mt-1" style={{ color: "#6b6d7e" }}>Employee will be prompted to change password upon first login.</p>
+              <p className="text-[11px] mt-1 text-muted-foreground/80">Employee will be prompted to change password upon first login.</p>
             </div>
           )}
 
           {/* Leave Balances */}
-          <div className="pt-4 border-t space-y-4" style={{ borderColor: S.outlineVariant }}>
-            <p className="text-[11px] font-bold uppercase tracking-widest" style={{ color: S.primary }}>Initial Leave Balances</p>
+          <div className="pt-4 border-t border-border/40 space-y-4">
+            <p className="text-[11px] font-bold uppercase tracking-widest text-primary">Initial Leave Balances</p>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="text-[11px] font-bold uppercase tracking-widest" style={{ color: S.muted }}>Earned Leaves</label>
+                <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Earned Leaves</label>
                 <FieldInput icon={CalendarCheck} type="number" placeholder="0" value={form.earnedLeaves}
                   onChange={(e) => setForm({ ...form, earnedLeaves: parseFloat(e.target.value) || 0 })} />
               </div>
               <div className="space-y-1.5">
-                <label className="text-[11px] font-bold uppercase tracking-widest" style={{ color: S.muted }}>Comp-off Leaves</label>
+                <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Comp-off Leaves</label>
                 <FieldInput icon={History} type="number" placeholder="0" value={form.compOffLeaves}
                   onChange={(e) => setForm({ ...form, compOffLeaves: parseFloat(e.target.value) || 0 })} />
               </div>
@@ -168,16 +162,13 @@ function EmployeeFormModal({ open, onOpenChange, edit, form, setForm, onSave, sa
         </div>
 
         {/* Footer */}
-        <div className="px-7 py-5 border-t flex items-center justify-end gap-3"
-          style={{ borderColor: S.outlineVariant, background: S.card }}>
+        <div className="px-7 py-5 border-t border-border/40 flex items-center justify-end gap-3 bg-card">
           <button type="button" onClick={() => onOpenChange(false)}
-            className="px-5 py-2.5 rounded-xl text-sm font-bold transition-colors hover:opacity-80"
-            style={{ color: S.muted }}>
+            className="px-5 py-2.5 rounded-xl text-sm font-bold transition-colors text-muted-foreground hover:bg-muted">
             Cancel
           </button>
           <button type="button" onClick={onSave} disabled={saving}
-            className="px-6 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-all active:scale-95 hover:opacity-90 disabled:opacity-60"
-            style={{ background: S.primary, color: S.primaryText }}>
+            className="px-6 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-all active:scale-95 bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-60">
             {saving ? <Loader2 className="size-4 animate-spin" /> : null}
             {edit ? "Save changes" : "Create Profile"}
           </button>

@@ -23,17 +23,17 @@ export const Route = createFileRoute("/login")({
 
 /* ── Shared input styles ── */
 const S = {
-  bg: "#1e2022",
-  border: "#434655",
-  text: "#e2e2e5",
-  placeholder: "#90909a",
+  bg: "#121416",
+  border: "#38393C",
+  text: "#FFFFFF",
+  placeholder: "#9DA3A9",
   surface: "#121416",
-  card: "#1a1c1e",
-  primary: "#dde1ff",
-  primaryText: "#071749",
-  muted: "#c4c5d7",
-  accent: "#6ffbbe",
-  outlineVariant: "rgba(67,70,85,0.4)",
+  card: "#1D2023",
+  primary: "#B7C4FF",
+  primaryText: "#121416",
+  muted: "#9DA3A9",
+  accent: "#B7C4FF",
+  outlineVariant: "#38393C",
 };
 
 function DarkInput({ icon: Icon, ...props }) {
