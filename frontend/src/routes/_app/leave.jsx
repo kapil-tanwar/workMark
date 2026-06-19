@@ -1,34 +1,117 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useAuth } from "@/lib/auth-context";
 import {
-  store,
-  leaveBalanceWithPending,
-  submitLeave,
-  cancelLeave,
-  submitCompOffRequest,
-  cancelCompOffRequest,
+  store, leaveBalanceWithPending, submitLeave, cancelLeave,
+  submitCompOffRequest, cancelCompOffRequest,
 } from "@/lib/store";
 import { useWorkflowRefresh } from "@/hooks/use-workflow-refresh";
-import { PageHeader, StatusBadge } from "@/components/wf-ui";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { PageHeader } from "@/components/wf-ui";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, X, Clock } from "lucide-react";
+  Plus, X, Clock, CalendarDays, AlarmClock, FileText, Info, Loader2, ChevronDown,
+} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { formatLeaveDays, leaveRequestDays } from "@/lib/leave-utils";
+import { cn } from "@/lib/utils"; // used in StatusChip
+
+/* ── Dark palette ── */
+const S = {
+  bg: "#1e2022", border: "#434655", text: "#e2e2e5",
+  placeholder: "#90909a", surface: "#121416", card: "#1a1c1e",
+  primary: "#dde1ff", primaryText: "#071749",
+  muted: "#c4c5d7", accent: "#6ffbbe",
+  surfaceHigh: "#282a2d", outlineVariant: "rgba(67,70,85,0.4)",
+};
+
+/* ── Dark modal wrapper ── */
+function DarkModal({ open, onClose, title, subtitle, children, footer }) {
+  if (!open) return null;
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ backdropFilter: "blur(8px)", background: "rgba(0,0,0,0.65)" }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div
+        className="w-full max-w-[560px] rounded-2xl border overflow-hidden"
+        style={{ background: S.card, borderColor: S.outlineVariant, boxShadow: "0 20px 50px -12px rgba(0,0,0,0.7)" }}
+      >
+        {/* Header */}
+        <div className="px-7 py-5 border-b flex justify-between items-start"
+          style={{ background: S.surface, borderColor: S.outlineVariant }}>
+          <div>
+            <h2 className="font-headline text-lg font-bold" style={{ color: S.text }}>{title}</h2>
+            {subtitle && <p className="text-sm mt-0.5" style={{ color: S.muted }}>{subtitle}</p>}
+          </div>
+          <button onClick={onClose} className="rounded-full p-1.5 hover:opacity-70 transition-opacity" style={{ color: S.muted }}>
+            <X className="size-4" />
+          </button>
+        </div>
+        {/* Body */}
+        <div className="px-7 py-6 space-y-5">{children}</div>
+        {/* Footer */}
+        {footer && (
+          <div className="px-7 py-5 border-t flex items-center justify-end gap-3"
+            style={{ borderColor: S.outlineVariant, background: S.card }}>
+            {footer}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── Dark field ── */
+function DField({ icon: Icon, type = "text", value, onChange, placeholder, className = "", children, ...rest }) {
+  const [focused, setFocused] = useState(false);
+  if (children) {
+    return (
+      <div className={`relative ${className}`}>
+        <Icon className="absolute left-3.5 top-3.5 size-4 pointer-events-none z-10"
+          style={{ color: focused ? S.primary : S.placeholder }} />
+        <select {...rest} value={value} onChange={onChange}
+          className="w-full h-12 pl-10 pr-8 rounded-xl text-sm border outline-none transition-all appearance-none"
+          style={{
+            background: S.bg, borderColor: focused ? S.primary : S.border, color: S.text,
+            boxShadow: focused ? "0 0 0 1px rgba(221,225,255,0.12)" : "none",
+          }}
+          onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
+        >{children}</select>
+        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 size-4 pointer-events-none" style={{ color: S.placeholder }} />
+      </div>
+    );
+  }
+  if (type === "textarea") {
+    return (
+      <div className={`relative ${className}`}>
+        <Icon className="absolute left-3.5 top-3.5 size-4 pointer-events-none z-10"
+          style={{ color: focused ? S.primary : S.placeholder }} />
+        <textarea {...rest} value={value} onChange={onChange} placeholder={placeholder} rows={3}
+          className="w-full pt-3 pl-10 pr-4 pb-3 rounded-xl text-sm border outline-none transition-all resize-none"
+          style={{
+            background: S.bg, borderColor: focused ? S.primary : S.border, color: S.text,
+            boxShadow: focused ? "0 0 0 1px rgba(221,225,255,0.12)" : "none",
+          }}
+          onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
+        />
+      </div>
+    );
+  }
+  return (
+    <div className={`relative ${className}`}>
+      <Icon className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 pointer-events-none z-10"
+        style={{ color: focused ? S.primary : S.placeholder }} />
+      <input {...rest} type={type} value={value} onChange={onChange} placeholder={placeholder}
+        className="w-full h-12 pl-10 pr-4 rounded-xl text-sm border outline-none transition-all"
+        style={{
+          background: S.bg, borderColor: focused ? S.primary : S.border, color: S.text,
+          boxShadow: focused ? "0 0 0 1px rgba(221,225,255,0.12)" : "none",
+        }}
+        onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
+      />
+    </div>
+  );
+}
 
 export const Route = createFileRoute("/_app/leave")({
   head: () => ({ meta: [{ title: "Leave Management — WorkFlow HR" }] }),
@@ -43,6 +126,28 @@ function formatDuration(duration) {
   if (num === 0.5) return "Half day";
   if (num === 1) return "Full day";
   return `${num} days`;
+}
+
+/* MD3 status chip */
+function StatusChip({ status }) {
+  const map = {
+    Present: "bg-[rgba(78,222,163,0.15)] text-tertiary",
+    Approved: "bg-[rgba(78,222,163,0.15)] text-tertiary",
+    Pending: "bg-[rgba(70,72,212,0.10)] text-[#4648d4]",
+    Rejected: "bg-[rgba(186,26,26,0.10)] text-destructive",
+    Leave: "bg-[rgba(70,72,212,0.10)] text-[#4648d4]",
+  };
+  const dot = {
+    Approved: "bg-tertiary", Present: "bg-tertiary",
+    Pending: "bg-[#4648d4]", Leave: "bg-[#4648d4]",
+    Rejected: "bg-destructive",
+  };
+  return (
+    <span className={cn("inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold", map[status] ?? "bg-muted text-muted-foreground")}>
+      <span className={cn("size-1.5 rounded-full shrink-0", dot[status] ?? "bg-muted-foreground")} />
+      {status}
+    </span>
+  );
 }
 
 function LeavePage() {
@@ -63,429 +168,309 @@ function LeavePage() {
 
   if (!user) return null;
 
-  const leaves = store
-    .getLeaves()
-    .filter((l) => l.userId === user.id)
-    .sort((a, b) => (a.appliedAt < b.appliedAt ? 1 : -1));
-
-  const compOffRequests = store
-    .getCompOffRequests()
-    .filter((r) => r.userId === user.id)
-    .sort((a, b) => (a.appliedAt < b.appliedAt ? 1 : -1));
-
+  const leaves = store.getLeaves().filter((l) => l.userId === user.id).sort((a, b) => (a.appliedAt < b.appliedAt ? 1 : -1));
+  const compOffRequests = store.getCompOffRequests().filter((r) => r.userId === user.id).sort((a, b) => (a.appliedAt < b.appliedAt ? 1 : -1));
   const bal = leaveBalanceWithPending(user.id);
 
   const handleStartDateChange = (e) => {
     const val = e.target.value;
     setStart(val);
-    if (val && end && val <= end) {
-      setLeaveDuration(leaveRequestDays(val, end, "full"));
-    }
+    if (val && end && val <= end) setLeaveDuration(leaveRequestDays(val, end, "full"));
   };
-
   const handleEndDateChange = (e) => {
     const val = e.target.value;
     setEnd(val);
-    if (start && val && start <= val) {
-      setLeaveDuration(leaveRequestDays(start, val, "full"));
-    }
+    if (start && val && start <= val) setLeaveDuration(leaveRequestDays(start, val, "full"));
   };
 
   async function handleSubmit() {
-    if (!start || !end || !reason) {
-      toast.error("Fill all required fields");
-      return;
-    }
-    if (end < start) {
-      toast.error("End date must be on or after start date");
-      return;
-    }
-    if (leaveDuration === 0.5 && start !== end) {
-      toast.error("Half-day leave must be for a single date");
-      return;
-    }
+    if (!start || !end || !reason) { toast.error("Fill all required fields"); return; }
+    if (end < start) { toast.error("End date must be on or after start date"); return; }
+    if (leaveDuration === 0.5 && start !== end) { toast.error("Half-day leave must be for a single date"); return; }
     setSubmitting(true);
     try {
-      const endDate = leaveDuration === 0.5 ? start : end;
-      await submitLeave({
-        userId: user.id,
-        type,
-        startDate: start,
-        endDate,
-        duration: String(leaveDuration),
-        reason,
-      });
+      await submitLeave({ userId: user.id, type, startDate: start, endDate: leaveDuration === 0.5 ? start : end, duration: String(leaveDuration), reason });
       toast.success("Leave request submitted");
-      setOpen(false);
-      setReason("");
-      setStart("");
-      setEnd("");
-      setLeaveDuration(1);
-    } catch (err) {
-      toast.error(err.message);
-    } finally {
-      setSubmitting(false);
-    }
+      setOpen(false); setReason(""); setStart(""); setEnd(""); setLeaveDuration(1);
+    } catch (err) { toast.error(err.message); } finally { setSubmitting(false); }
   }
 
   async function handleCompOffSubmit() {
-    if (!overtimeDate || !overtimeReason) {
-      toast.error("Fill all required fields");
-      return;
-    }
+    if (!overtimeDate || !overtimeReason) { toast.error("Fill all required fields"); return; }
     setCompOffSubmitting(true);
     try {
-      await submitCompOffRequest({
-        overtimeDate,
-        duration: overtimeDuration,
-        reason: overtimeReason,
-      });
+      await submitCompOffRequest({ overtimeDate, duration: overtimeDuration, reason: overtimeReason });
       toast.success("Comp-off credit request submitted");
-      setCompOffOpen(false);
-      setOvertimeDate("");
-      setOvertimeReason("");
-      setOvertimeDuration("half");
-    } catch (err) {
-      toast.error(err.message);
-    } finally {
-      setCompOffSubmitting(false);
-    }
+      setCompOffOpen(false); setOvertimeDate(""); setOvertimeReason(""); setOvertimeDuration("half");
+    } catch (err) { toast.error(err.message); } finally { setCompOffSubmitting(false); }
   }
 
   async function handleCancel(id) {
     const lv = leaves.find((l) => l.id === id);
     if (!lv || lv.status !== "Pending") return;
-    try {
-      await cancelLeave(id);
-      toast.success("Request cancelled");
-    } catch (err) {
-      toast.error(err.message);
-    }
+    try { await cancelLeave(id); toast.success("Request cancelled"); } catch (err) { toast.error(err.message); }
   }
 
   async function handleCancelCompOff(id) {
     const req = compOffRequests.find((r) => r.id === id);
     if (!req || req.status !== "Pending") return;
-    try {
-      await cancelCompOffRequest(id);
-      toast.success("Comp-off request cancelled");
-    } catch (err) {
-      toast.error(err.message);
-    }
+    try { await cancelCompOffRequest(id); toast.success("Comp-off request cancelled"); } catch (err) { toast.error(err.message); }
   }
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Leave Management"
-        description="Apply for leave, request comp-off credits for overtime, and track your balance."
-        actions={
-          <div className="flex flex-wrap gap-2">
-            <Dialog open={compOffOpen} onOpenChange={setCompOffOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline">
-                  <Clock className="size-4" /> Request comp-off credit
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Request comp-off credit</DialogTitle>
-                  <DialogDescription>
-                    Report overtime work. Admin approval adds 0.5 day (half) or 1 day (full) to your comp-off balance.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div className="space-y-1.5">
-                    <Label>Overtime date</Label>
-                    <Input type="date" value={overtimeDate} onChange={(e) => setOvertimeDate(e.target.value)} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Overtime duration</Label>
-                    <Select value={overtimeDuration} onValueChange={setOvertimeDuration}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="half">Half day (+0.5 comp-off)</SelectItem>
-                        <SelectItem value="full">Full day (+1 comp-off)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Reason / details</Label>
-                    <Textarea
-                      rows={3}
-                      placeholder="Describe the overtime work performed"
-                      value={overtimeReason}
-                      onChange={(e) => setOvertimeReason(e.target.value)}
-                    />
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setCompOffOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button onClick={handleCompOffSubmit} disabled={compOffSubmitting}>
-                    Submit request
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+    <div className="space-y-5 sm:space-y-6">
 
-            <Dialog open={open} onOpenChange={setOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="size-4" /> Apply for leave
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Apply for leave</DialogTitle>
-                  <DialogDescription>Submit a new leave request for approval.</DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div className="space-y-1.5">
-                    <Label>Leave type</Label>
-                    <Select value={type} onValueChange={setType}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Earned Leave">Earned Leave</SelectItem>
-                        <SelectItem value="Comp-Off Leave">Comp-Off Leave</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-muted-foreground">
-                      Available: {formatLeaveDays(Math.max(0, bal.remainingByType[type] ?? 0))} day(s)
-                    </p>
-                  </div>
-                   <div className="space-y-1.5">
-                    <Label>Duration (days)</Label>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        className="h-10 w-10 shrink-0 font-bold select-none"
-                        disabled={leaveDuration <= 0.5}
-                        onClick={() => {
-                          const nextVal = Math.max(0.5, leaveDuration - 0.5);
-                          setLeaveDuration(nextVal);
-                          if (nextVal === 0.5 && start) {
-                            setEnd(start);
-                          }
-                        }}
-                      >
-                        -
-                      </Button>
-                      <Input
-                        type="number"
-                        step="0.5"
-                        min="0.5"
-                        className="text-center font-semibold text-lg h-10"
-                        value={leaveDuration}
-                        onChange={(e) => {
-                          const val = parseFloat(e.target.value);
-                          if (!isNaN(val)) {
-                            setLeaveDuration(val);
-                            if (val === 0.5 && start) {
-                              setEnd(start);
-                            }
-                          }
-                        }}
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        className="h-10 w-10 shrink-0 font-bold select-none"
-                        onClick={() => setLeaveDuration(leaveDuration + 0.5)}
-                      >
-                        +
-                      </Button>
-                    </div>
-                  </div>
-                  {leaveDuration === 0.5 ? (
-                    <div className="space-y-1.5">
-                      <Label>Date</Label>
-                      <Input
-                        type="date"
-                        value={start}
-                        onChange={(e) => {
-                          setStart(e.target.value);
-                          setEnd(e.target.value);
-                        }}
-                      />
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1.5">
-                        <Label>Start date</Label>
-                        <Input type="date" value={start} onChange={handleStartDateChange} />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label>End date</Label>
-                        <Input type="date" value={end} onChange={handleEndDateChange} />
-                      </div>
-                    </div>
-                  )}
-                  <div className="space-y-1.5">
-                    <Label>Reason</Label>
-                    <Textarea
-                      rows={3}
-                      placeholder="Briefly describe the reason"
-                      value={reason}
-                      onChange={(e) => setReason(e.target.value)}
-                    />
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button onClick={handleSubmit} disabled={submitting}>
-                    Submit request
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </div>
+      {/* ── Comp-off Modal ── */}
+      <DarkModal
+        open={compOffOpen} onClose={() => setCompOffOpen(false)}
+        title="Request comp-off credit"
+        subtitle="Submit overtime details for credit approval"
+        footer={
+          <>
+            <button type="button" onClick={() => setCompOffOpen(false)}
+              className="px-5 py-2.5 rounded-xl text-sm font-bold hover:opacity-80 transition-opacity"
+              style={{ color: S.muted }}>Cancel</button>
+            <button type="button" onClick={handleCompOffSubmit} disabled={compOffSubmitting}
+              className="px-6 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-all active:scale-95 hover:opacity-90 disabled:opacity-60"
+              style={{ background: S.primary, color: S.primaryText }}>
+              {compOffSubmitting && <Loader2 className="size-4 animate-spin" />}
+              Submit request
+            </button>
+          </>
         }
-      />
+      >
+        <div className="space-y-2">
+          <label className="text-[11px] font-bold uppercase tracking-widest" style={{ color: S.muted }}>Overtime date</label>
+          <DField icon={CalendarDays} type="date" value={overtimeDate} onChange={(e) => setOvertimeDate(e.target.value)}
+            style={{ colorScheme: "dark" }} />
+        </div>
+        <div className="space-y-2">
+          <label className="text-[11px] font-bold uppercase tracking-widest" style={{ color: S.muted }}>Overtime duration</label>
+          <DField icon={AlarmClock} value={overtimeDuration} onChange={(e) => setOvertimeDuration(e.target.value)}>
+            <option value="half">Half Day (+0.5 comp-off)</option>
+            <option value="full">Full Day (+1 comp-off)</option>
+          </DField>
+        </div>
+        <div className="space-y-2">
+          <label className="text-[11px] font-bold uppercase tracking-widest" style={{ color: S.muted }}>Reason / details</label>
+          <DField icon={FileText} type="textarea" placeholder="e.g. Project X deadline, Critical server maintenance..."
+            value={overtimeReason} onChange={(e) => setOvertimeReason(e.target.value)} />
+        </div>
+        <div className="flex items-start gap-3 px-4 py-3 rounded-xl border text-sm"
+          style={{ background: "rgba(221,225,255,0.05)", borderColor: "rgba(221,225,255,0.12)", color: S.muted }}>
+          <Info className="size-4 mt-0.5 shrink-0" style={{ color: S.primary }} />
+          <span>Credits are subject to manager approval based on verified logs. Standard processing time is 1–2 business days.</span>
+        </div>
+      </DarkModal>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-        <div className="rounded-xl border border-border p-5 bg-success/10 text-success">
-          <div className="text-xs font-semibold uppercase tracking-wider opacity-80">Earned Leave</div>
-          <div className="mt-2 text-3xl font-bold">
-            {formatLeaveDays(Math.max(0, bal.earned.remaining))}
-          </div>
-          <p className="text-xs mt-1 opacity-70">
-            {formatLeaveDays(Math.max(0, bal.earned.remaining))} left · +1.5 added on 1st of each month
+      {/* ── Apply for Leave Modal ── */}
+      <DarkModal
+        open={open} onClose={() => setOpen(false)}
+        title="Request Time Off"
+        subtitle="Submit your request for review. Your manager will be notified instantly."
+        footer={
+          <>
+            <button type="button" onClick={() => setOpen(false)}
+              className="px-5 py-2.5 rounded-xl text-sm font-bold hover:opacity-80 transition-opacity"
+              style={{ color: S.muted }}>Cancel</button>
+            <button type="button" onClick={handleSubmit} disabled={submitting}
+              className="px-6 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-all active:scale-95 hover:opacity-90 disabled:opacity-60"
+              style={{ background: S.primary, color: S.primaryText }}>
+              {submitting && <Loader2 className="size-4 animate-spin" />}
+              Submit Request
+            </button>
+          </>
+        }
+      >
+        {/* Leave type */}
+        <div className="space-y-2">
+          <label className="text-[11px] font-bold uppercase tracking-widest" style={{ color: S.muted }}>Leave type</label>
+          <DField icon={CalendarDays} value={type} onChange={(e) => setType(e.target.value)}>
+            <option value="Earned Leave">Earned Leave</option>
+            <option value="Comp-Off Leave">Comp-Off Leave</option>
+          </DField>
+          <p className="text-[11px] mt-1" style={{ color: S.muted }}>
+            Available: {formatLeaveDays(bal.remainingByType[type] ?? 0)} day(s)
           </p>
         </div>
 
-        <div className="rounded-xl border border-border p-5 bg-info/10 text-info">
-          <div className="text-xs font-semibold uppercase tracking-wider opacity-80">Comp-Off Leave</div>
-          <div className="mt-2 text-3xl font-bold">
-            {formatLeaveDays(Math.max(0, bal.compOff.remaining))}
+        {/* Duration stepper */}
+        <div className="space-y-2">
+          <label className="text-[11px] font-bold uppercase tracking-widest" style={{ color: S.muted }}>Duration (days)</label>
+          <div className="flex items-center gap-3">
+            <button type="button"
+              className="size-10 rounded-xl border text-lg font-bold flex items-center justify-center transition-all hover:opacity-80 active:scale-95"
+              style={{ background: S.bg, borderColor: S.border, color: S.text }}
+              disabled={leaveDuration <= 0.5}
+              onClick={() => { const n = Math.max(0.5, leaveDuration - 0.5); setLeaveDuration(n); if (n === 0.5 && start) setEnd(start); }}
+            >−</button>
+            <input type="number" step="0.5" min="0.5"
+              className="flex-1 h-10 text-center rounded-xl border text-lg font-bold outline-none"
+              style={{ background: S.bg, borderColor: S.border, color: S.text }}
+              value={leaveDuration}
+              onChange={(e) => { const v = parseFloat(e.target.value); if (!isNaN(v)) { setLeaveDuration(v); if (v === 0.5 && start) setEnd(start); } }}
+            />
+            <button type="button"
+              className="size-10 rounded-xl border text-lg font-bold flex items-center justify-center transition-all hover:opacity-80 active:scale-95"
+              style={{ background: S.bg, borderColor: S.border, color: S.text }}
+              onClick={() => setLeaveDuration(leaveDuration + 0.5)}
+            >+</button>
           </div>
-          <p className="text-xs mt-1 opacity-70">
-            {formatLeaveDays(Math.max(0, bal.compOff.remaining))} comp-off left
-          </p>
         </div>
 
-        <div className="rounded-xl border border-border p-5 bg-primary-soft text-primary">
-          <div className="text-xs font-semibold uppercase tracking-wider opacity-80">Total Leave Balance</div>
-          <div className="mt-2 text-3xl font-bold">{formatLeaveDays(Math.max(0, bal.totalRemaining))}</div>
-          <p className="text-xs mt-1 opacity-70">Combined earned + comp-off available</p>
+        {/* Dates */}
+        {leaveDuration === 0.5 ? (
+          <div className="space-y-2">
+            <label className="text-[11px] font-bold uppercase tracking-widest" style={{ color: S.muted }}>Date</label>
+            <DField icon={CalendarDays} type="date" value={start}
+              onChange={(e) => { setStart(e.target.value); setEnd(e.target.value); }} />
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <label className="text-[11px] font-bold uppercase tracking-widest" style={{ color: S.muted }}>Start date</label>
+              <DField icon={CalendarDays} type="date" value={start} onChange={handleStartDateChange} />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[11px] font-bold uppercase tracking-widest" style={{ color: S.muted }}>End date</label>
+              <DField icon={CalendarDays} type="date" value={end} onChange={handleEndDateChange} />
+            </div>
+          </div>
+        )}
+
+        {/* Reason */}
+        <div className="space-y-2">
+          <label className="text-[11px] font-bold uppercase tracking-widest" style={{ color: S.muted }}>Reason / Notes</label>
+          <DField icon={FileText} type="textarea" placeholder="Provide a brief explanation for your request..."
+            value={reason} onChange={(e) => setReason(e.target.value)} />
+        </div>
+      </DarkModal>
+
+      {/* ── Header with side-by-side buttons ── */}
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-0">
+        <div className="min-w-0">
+          <h2 className="font-headline text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-foreground">Leave Management</h2>
+          <p className="text-sm text-muted-foreground mt-1.5">Apply for leave, request comp-off credits, and track your balance.</p>
+        </div>
+        {/* Buttons — always side by side, wrap gracefully */}
+        <div className="flex flex-row gap-2 shrink-0 flex-wrap">
+          <button
+            onClick={() => setCompOffOpen(true)}
+            className="flex items-center gap-2 border border-border/60 bg-card text-foreground px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-muted active:scale-95 transition-all whitespace-nowrap"
+          >
+            <Clock className="size-4 shrink-0" />
+            <span>Request comp-off</span>
+          </button>
+          <button
+            onClick={() => setOpen(true)}
+            className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2.5 rounded-xl text-sm font-bold hover:opacity-90 active:scale-95 transition-all shadow-md shadow-primary/20 whitespace-nowrap"
+          >
+            <Plus className="size-4 shrink-0" />
+            <span>Apply for leave</span>
+          </button>
         </div>
       </div>
 
-      <div className="bg-card border border-border rounded-xl overflow-hidden">
-        <div className="p-4 sm:p-5 border-b border-border">
-          <h3 className="font-semibold text-sm sm:text-base">Leave history</h3>
+      {/* ── Balance tiles — 2-col on mobile, 3-col on sm+ ── */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        {/* Earned Leave */}
+        <div className="rounded-2xl border border-border/40 p-4 sm:p-5 bg-tertiary-fixed/30 card-shadow">
+          <div className="text-[11px] font-bold uppercase tracking-wider text-tertiary">Earned Leave</div>
+          <div className="mt-2 text-3xl font-bold text-tertiary font-headline">{formatLeaveDays(bal.earned.remaining)}</div>
+          <p className="text-[11px] mt-1 text-tertiary opacity-80">{formatLeaveDays(bal.earned.remaining)} left · +1.5 added on 1st of each month</p>
+        </div>
+
+        {/* Comp-Off Leave */}
+        <div className="rounded-2xl border border-border/40 p-4 sm:p-5 bg-secondary-fixed/30 card-shadow">
+          <div className="text-[11px] font-bold uppercase tracking-wider text-[#4648d4]">Comp-Off Leave</div>
+          <div className="mt-2 text-3xl font-bold text-[#4648d4] font-headline">{formatLeaveDays(bal.compOff.remaining)}</div>
+          <p className="text-[11px] mt-1 text-[#4648d4] opacity-80">{formatLeaveDays(bal.compOff.remaining)} comp-off left</p>
+        </div>
+
+        {/* Total Leave Balance — full width on 2-col mobile */}
+        <div className="rounded-2xl border border-border/40 p-4 sm:p-5 bg-primary-fixed/30 card-shadow col-span-2 sm:col-span-1">
+          <div className="text-[11px] font-bold uppercase tracking-wider text-on-primary-fixed">Total Leave Balance</div>
+          <div className="mt-2 text-3xl font-bold text-on-primary-fixed font-headline">{formatLeaveDays(bal.totalRemaining)}</div>
+          <p className="text-[11px] mt-1 text-on-primary-fixed opacity-80">Combined earned + comp-off available</p>
+        </div>
+      </div>
+
+      {/* ── Leave History Table ── */}
+      <div className="bg-card border border-border/40 rounded-2xl card-shadow overflow-hidden">
+        <div className="px-5 py-4 border-b border-border/40">
+          <h3 className="font-headline font-bold text-base text-foreground">Leave history</h3>
         </div>
         <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Type</TableHead>
-                <TableHead>Duration</TableHead>
-                <TableHead>Start</TableHead>
-                <TableHead>End</TableHead>
-                <TableHead>Reason</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Action</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+          <table className="w-full text-left border-collapse min-w-[520px]">
+            <thead>
+              <tr className="bg-muted/30 border-b border-border/40">
+                {["Type", "Duration", "Start", "End", "Reason", "Status", ""].map((h) => (
+                  <th key={h} className="px-5 py-3.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border/30">
               {leaves.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground py-12">
-                    No leave requests yet
-                  </TableCell>
-                </TableRow>
-              ) : (
-                leaves.map((l) => (
-                  <TableRow key={l.id}>
-                    <TableCell className="font-medium">{l.type}</TableCell>
-                    <TableCell>{formatDuration(l.duration)}</TableCell>
-                    <TableCell>{l.startDate}</TableCell>
-                    <TableCell>{l.endDate}</TableCell>
-                    <TableCell className="max-w-[240px] truncate text-muted-foreground">{l.reason}</TableCell>
-                    <TableCell>
-                      <StatusBadge status={l.status} />
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {l.status === "Pending" ? (
-                        <Button size="sm" variant="ghost" onClick={() => handleCancel(l.id)}>
-                          <X className="size-4" /> Cancel
-                        </Button>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">—</span>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                <tr><td colSpan={7} className="px-5 py-14 text-center text-sm text-muted-foreground">No leave requests yet</td></tr>
+              ) : leaves.map((l) => (
+                <tr key={l.id} className="hover:bg-muted/25 transition-colors">
+                  <td className="px-5 py-3.5 font-semibold text-sm text-foreground whitespace-nowrap">{l.type}</td>
+                  <td className="px-5 py-3.5 text-sm text-foreground whitespace-nowrap">{formatDuration(l.duration)}</td>
+                  <td className="px-5 py-3.5 text-sm font-mono text-foreground whitespace-nowrap">{l.startDate}</td>
+                  <td className="px-5 py-3.5 text-sm font-mono text-foreground whitespace-nowrap">{l.endDate}</td>
+                  <td className="px-5 py-3.5 text-sm text-muted-foreground max-w-[180px] truncate">{l.reason}</td>
+                  <td className="px-5 py-3.5"><StatusChip status={l.status} /></td>
+                  <td className="px-5 py-3.5 text-right">
+                    {l.status === "Pending" ? (
+                      <button onClick={() => handleCancel(l.id)} className="flex items-center gap-1 text-destructive text-xs font-semibold hover:underline ml-auto">
+                        <X className="size-3.5" /> Cancel
+                      </button>
+                    ) : <span className="text-muted-foreground text-xs">—</span>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 
-      <div className="bg-card border border-border rounded-xl overflow-hidden">
-        <div className="p-4 sm:p-5 border-b border-border">
-          <h3 className="font-semibold text-sm sm:text-base">Comp-off credit requests</h3>
+      {/* ── Comp-off Requests Table ── */}
+      <div className="bg-card border border-border/40 rounded-2xl card-shadow overflow-hidden">
+        <div className="px-5 py-4 border-b border-border/40">
+          <h3 className="font-headline font-bold text-base text-foreground">Comp-off credit requests</h3>
         </div>
         <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Overtime date</TableHead>
-                <TableHead>Duration</TableHead>
-                <TableHead>Reason</TableHead>
-                <TableHead>Credit</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Action</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+          <table className="w-full text-left border-collapse min-w-[480px]">
+            <thead>
+              <tr className="bg-muted/30 border-b border-border/40">
+                {["Overtime Date", "Duration", "Reason", "Credit", "Status", ""].map((h) => (
+                  <th key={h} className="px-5 py-3.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border/30">
               {compOffRequests.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground py-12">
-                    No comp-off requests yet
-                  </TableCell>
-                </TableRow>
-              ) : (
-                compOffRequests.map((r) => (
-                  <TableRow key={r.id}>
-                    <TableCell>{r.overtimeDate}</TableCell>
-                    <TableCell className="capitalize">{r.duration === "half" ? "Half day" : "Full day"}</TableCell>
-                    <TableCell className="max-w-[240px] truncate text-muted-foreground">{r.reason}</TableCell>
-                    <TableCell>
-                      {r.status === "Approved" && r.creditAmount != null
-                        ? `+${formatLeaveDays(r.creditAmount)}`
-                        : r.duration === "half"
-                          ? "+0.5"
-                          : "+1"}
-                    </TableCell>
-                    <TableCell>
-                      <StatusBadge status={r.status} />
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {r.status === "Pending" ? (
-                        <Button size="sm" variant="ghost" onClick={() => handleCancelCompOff(r.id)}>
-                          <X className="size-4" /> Cancel
-                        </Button>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">—</span>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                <tr><td colSpan={6} className="px-5 py-14 text-center text-sm text-muted-foreground">No comp-off requests yet</td></tr>
+              ) : compOffRequests.map((r) => (
+                <tr key={r.id} className="hover:bg-muted/25 transition-colors">
+                  <td className="px-5 py-3.5 text-sm font-mono text-foreground whitespace-nowrap">{r.overtimeDate}</td>
+                  <td className="px-5 py-3.5 text-sm text-foreground whitespace-nowrap">{r.duration === "half" ? "Half day" : "Full day"}</td>
+                  <td className="px-5 py-3.5 text-sm text-muted-foreground max-w-[200px] truncate">{r.reason}</td>
+                  <td className="px-5 py-3.5 text-sm font-bold text-tertiary">
+                    {r.status === "Approved" && r.creditAmount != null ? `+${formatLeaveDays(r.creditAmount)}` : r.duration === "half" ? "+0.5" : "+1"}
+                  </td>
+                  <td className="px-5 py-3.5"><StatusChip status={r.status} /></td>
+                  <td className="px-5 py-3.5 text-right">
+                    {r.status === "Pending" ? (
+                      <button onClick={() => handleCancelCompOff(r.id)} className="flex items-center gap-1 text-destructive text-xs font-semibold hover:underline ml-auto">
+                        <X className="size-3.5" /> Cancel
+                      </button>
+                    ) : <span className="text-muted-foreground text-xs">—</span>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

@@ -5,12 +5,18 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  /* Fonts */
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-headline: "Manrope", ui-sans-serif, system-ui, sans-serif;
+
+  /* Radius */
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
   --radius-2xl: calc(var(--radius) + 8px);
+
+  /* Core semantic */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -37,6 +43,8 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+
+  /* Sidebar */
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -45,81 +53,161 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+
+  /* MD3 icon-tile tokens */
+  --color-primary-fixed: var(--primary-fixed);
+  --color-on-primary-fixed: var(--on-primary-fixed);
+  --color-tertiary: var(--tertiary);
+  --color-tertiary-fixed: var(--tertiary-fixed);
+  --color-on-tertiary: var(--on-tertiary);
+  --color-error-container: var(--error-container);
+  --color-on-error-container: var(--on-error-container);
+  --color-secondary-fixed: var(--secondary-fixed);
+  --color-on-secondary-fixed: var(--on-secondary-fixed);
+  --color-surface-container-high: var(--surface-container-high);
+  --color-secondary-color: var(--secondary-color);
 }
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(0.985 0.003 240);
-  --foreground: oklch(0.21 0.03 255);
+
+  /* Page & card surfaces */
+  --background: oklch(0.971 0.003 247);
+  --foreground: oklch(0.14 0.025 260);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.21 0.03 255);
+  --card-foreground: oklch(0.14 0.025 260);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.21 0.03 255);
-  --primary: oklch(0.45 0.22 264);
+  --popover-foreground: oklch(0.14 0.025 260);
+
+  /* Primary — deep blue matching #0037b0 */
+  --primary: oklch(0.38 0.22 264);
   --primary-foreground: oklch(0.99 0 0);
-  --primary-soft: oklch(0.95 0.04 264);
-  --secondary: oklch(0.96 0.01 255);
+  --primary-soft: oklch(0.91 0.055 264);
+
+  /* MD3 primary-fixed (light tint, same in both modes) */
+  --primary-fixed: oklch(0.91 0.055 264);
+  --on-primary-fixed: oklch(0.16 0.13 264);
+
+  /* Tertiary — forest green for "Present" */
+  --tertiary: oklch(0.30 0.10 155);
+  --tertiary-fixed: oklch(0.89 0.12 155);
+  --on-tertiary: oklch(0.99 0 0);
+
+  /* Error container — soft red for "Absent" icon tile */
+  --error-container: oklch(0.94 0.045 22);
+  --on-error-container: oklch(0.40 0.18 27);
+
+  /* Secondary — used for muted surfaces */
+  --secondary: oklch(0.94 0.01 255);
   --secondary-foreground: oklch(0.35 0.04 255);
-  --muted: oklch(0.96 0.01 255);
-  --muted-foreground: oklch(0.52 0.03 255);
-  --accent: oklch(0.95 0.04 264);
-  --accent-foreground: oklch(0.45 0.22 264);
-  --destructive: oklch(0.58 0.22 27);
+
+  /* Secondary-fixed — soft purple/indigo for "On Leave" icon tile */
+  --secondary-fixed: oklch(0.91 0.065 268);
+  --on-secondary-fixed: oklch(0.18 0.14 268);
+
+  /* Muted / surface containers */
+  --muted: oklch(0.94 0.008 255);
+  --muted-foreground: oklch(0.45 0.03 255);
+  --surface-container-high: oklch(0.94 0.006 247);
+
+  /* Accent */
+  --accent: oklch(0.91 0.055 264);
+  --accent-foreground: oklch(0.38 0.22 264);
+
+  /* Status */
+  --destructive: oklch(0.52 0.22 27);
   --destructive-foreground: oklch(0.99 0 0);
-  --success: oklch(0.62 0.16 155);
+  --success: oklch(0.58 0.16 155);
   --success-foreground: oklch(0.99 0 0);
-  --warning: oklch(0.78 0.16 75);
-  --warning-foreground: oklch(0.21 0.03 255);
-  --info: oklch(0.65 0.14 230);
+  --warning: oklch(0.76 0.16 75);
+  --warning-foreground: oklch(0.14 0.025 260);
+  --info: oklch(0.62 0.14 230);
   --info-foreground: oklch(0.99 0 0);
-  --border: oklch(0.92 0.01 255);
-  --input: oklch(0.92 0.01 255);
-  --ring: oklch(0.45 0.22 264);
-  --sidebar: oklch(1 0 0);
-  --sidebar-foreground: oklch(0.35 0.04 255);
-  --sidebar-primary: oklch(0.45 0.22 264);
+
+  /* Borders */
+  --border: oklch(0.88 0.012 255);
+  --input: oklch(0.88 0.012 255);
+  --ring: oklch(0.38 0.22 264);
+
+  /* Sidebar — slightly lighter than main bg */
+  --sidebar: oklch(0.975 0.003 247);
+  --sidebar-foreground: oklch(0.28 0.04 255);
+  --sidebar-primary: oklch(0.38 0.22 264);
   --sidebar-primary-foreground: oklch(0.99 0 0);
-  --sidebar-accent: oklch(0.95 0.04 264);
-  --sidebar-accent-foreground: oklch(0.45 0.22 264);
-  --sidebar-border: oklch(0.92 0.01 255);
-  --sidebar-ring: oklch(0.45 0.22 264);
+  --sidebar-accent: oklch(0.91 0.055 264);
+  --sidebar-accent-foreground: oklch(0.38 0.22 264);
+  --sidebar-border: oklch(0.88 0.012 255);
+  --sidebar-ring: oklch(0.38 0.22 264);
 }
 
 .dark {
-  --background: oklch(0.18 0.02 255);
-  --foreground: oklch(0.98 0 0);
-  --card: oklch(0.22 0.02 255);
-  --card-foreground: oklch(0.98 0 0);
-  --popover: oklch(0.22 0.02 255);
-  --popover-foreground: oklch(0.98 0 0);
-  --primary: oklch(0.7 0.18 264);
-  --primary-foreground: oklch(0.18 0.02 255);
-  --primary-soft: oklch(0.28 0.06 264);
-  --secondary: oklch(0.27 0.02 255);
-  --secondary-foreground: oklch(0.98 0 0);
-  --muted: oklch(0.27 0.02 255);
-  --muted-foreground: oklch(0.7 0.02 255);
-  --accent: oklch(0.28 0.06 264);
-  --accent-foreground: oklch(0.85 0.1 264);
-  --destructive: oklch(0.65 0.22 27);
+  /* ── Deep dark surfaces matching login/signup palette (#121416, #1a1c1e, #282a2c) ── */
+  --background: oklch(0.108 0.012 255);      /* #121416 */
+  --foreground: oklch(0.905 0.005 255);      /* #e2e2e5 */
+  --card: oklch(0.133 0.013 255);            /* #1a1c1e */
+  --card-foreground: oklch(0.905 0.005 255);
+  --popover: oklch(0.155 0.013 255);         /* #1e2022 */
+  --popover-foreground: oklch(0.905 0.005 255);
+
+  /* Primary — #dde1ff lavender (same as login accent) */
+  --primary: oklch(0.89 0.068 264);          /* #dde1ff */
+  --primary-foreground: oklch(0.145 0.09 264); /* #071749 */
+  --primary-soft: oklch(0.22 0.07 264);
+
+  /* MD3 fixed — same tint */
+  --primary-fixed: oklch(0.89 0.068 264);
+  --on-primary-fixed: oklch(0.145 0.09 264);
+
+  /* Tertiary — #6ffbbe green (login accent) */
+  --tertiary: oklch(0.87 0.14 160);          /* #6ffbbe */
+  --tertiary-fixed: oklch(0.22 0.09 155);    /* dark tint bg */
+  --on-tertiary: oklch(0.108 0.012 255);
+
+  /* Error container */
+  --error-container: oklch(0.26 0.09 22);
+  --on-error-container: oklch(0.82 0.08 22);
+
+  /* Secondary */
+  --secondary: oklch(0.175 0.015 255);       /* #1e2022 */
+  --secondary-foreground: oklch(0.82 0.008 255);
+
+  /* Secondary-fixed — indigo tint */
+  --secondary-fixed: oklch(0.22 0.09 268);
+  --on-secondary-fixed: oklch(0.82 0.05 268);
+
+  /* Muted / surface containers */
+  --muted: oklch(0.185 0.015 255);           /* #282a2c area */
+  --muted-foreground: oklch(0.60 0.018 255); /* #c4c5d7 area */
+  --surface-container-high: oklch(0.195 0.015 255);
+
+  /* Accent */
+  --accent: oklch(0.195 0.06 264);
+  --accent-foreground: oklch(0.78 0.09 264);
+
+  /* Status */
+  --destructive: oklch(0.62 0.22 27);
   --destructive-foreground: oklch(0.99 0 0);
-  --success: oklch(0.7 0.16 155);
-  --success-foreground: oklch(0.18 0.02 255);
-  --warning: oklch(0.8 0.16 75);
-  --warning-foreground: oklch(0.18 0.02 255);
-  --info: oklch(0.7 0.14 230);
-  --info-foreground: oklch(0.18 0.02 255);
-  --border: oklch(1 0 0 / 12%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.7 0.18 264);
-  --sidebar: oklch(0.22 0.02 255);
-  --sidebar-foreground: oklch(0.92 0.01 255);
-  --sidebar-primary: oklch(0.7 0.18 264);
-  --sidebar-primary-foreground: oklch(0.18 0.02 255);
-  --sidebar-accent: oklch(0.28 0.06 264);
-  --sidebar-accent-foreground: oklch(0.85 0.1 264);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.7 0.18 264);
+  --success: oklch(0.87 0.14 160);
+  --success-foreground: oklch(0.108 0.012 255);
+  --warning: oklch(0.78 0.16 75);
+  --warning-foreground: oklch(0.108 0.012 255);
+  --info: oklch(0.68 0.14 230);
+  --info-foreground: oklch(0.108 0.012 255);
+
+  /* Borders — very subtle on dark */
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 12%);
+  --ring: oklch(0.89 0.068 264);
+
+  /* Sidebar — slightly darker than card (#141618 area) */
+  --sidebar: oklch(0.118 0.013 255);
+  --sidebar-foreground: oklch(0.82 0.008 255);
+  --sidebar-primary: oklch(0.89 0.068 264);
+  --sidebar-primary-foreground: oklch(0.145 0.09 264);
+  --sidebar-accent: oklch(0.195 0.06 264);
+  --sidebar-accent-foreground: oklch(0.78 0.09 264);
+  --sidebar-border: oklch(1 0 0 / 8%);
+  --sidebar-ring: oklch(0.89 0.068 264);
 }
 
 @layer base {
@@ -132,4 +220,80 @@
     color: var(--color-foreground);
     -webkit-font-smoothing: antialiased;
   }
+}
+
+/* Card shadow utility matching reference design */
+.card-shadow {
+  box-shadow: 0 4px 15px -3px rgba(0,0,0,0.06), 0 2px 6px -2px rgba(0,0,0,0.04);
+}
+.dark .card-shadow {
+  box-shadow: 0 4px 15px -3px rgba(0,0,0,0.30), 0 2px 6px -2px rgba(0,0,0,0.18);
+}
+
+/* ── Smooth scroll for the entire app ── */
+html {
+  scroll-behavior: smooth;
+}
+
+/* ── Custom slim scrollbar for main content area ── */
+main::-webkit-scrollbar,
+.table-scroll::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+main::-webkit-scrollbar-track,
+.table-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+main::-webkit-scrollbar-thumb,
+.table-scroll::-webkit-scrollbar-thumb {
+  background: oklch(0.75 0.01 255 / 50%);
+  border-radius: 10px;
+}
+main::-webkit-scrollbar-thumb:hover,
+.table-scroll::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.60 0.01 255 / 70%);
+}
+.dark main::-webkit-scrollbar-thumb {
+  background: oklch(1 0 0 / 15%);
+}
+.dark main::-webkit-scrollbar-thumb:hover {
+  background: oklch(1 0 0 / 25%);
+}
+
+/* ── Sidebar nav scrollbar (very subtle) ── */
+nav::-webkit-scrollbar { width: 3px; }
+nav::-webkit-scrollbar-track { background: transparent; }
+nav::-webkit-scrollbar-thumb { background: transparent; border-radius: 10px; }
+nav:hover::-webkit-scrollbar-thumb { background: oklch(0.7 0.01 255 / 30%); }
+
+/* ── Focus ring polish ── */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ── Text selection color ── */
+::selection {
+  background: oklch(0.91 0.055 264 / 60%);
+  color: oklch(0.16 0.13 264);
+}
+.dark ::selection {
+  background: oklch(0.38 0.22 264 / 50%);
+  color: oklch(0.93 0.005 255);
+}
+
+/* ── Prevent layout shift from scrollbar appearing ── */
+html {
+  scrollbar-gutter: stable;
+}
+
+/* ── Transition for page changes ── */
+main > div {
+  animation: fadeSlideIn 0.18s ease-out;
+}
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
 }

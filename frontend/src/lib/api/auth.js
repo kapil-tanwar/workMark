@@ -28,9 +28,16 @@ export async function updateProfile(body) {
   return normalizeUser(data.user);
 }
 
-export async function forgotPassword({ identifier, phone, newPassword }) {
+export async function sendResetOtp({ identifier, phone }) {
+  return request("/api/auth/forgot-password/send-otp", {
+    method: "POST",
+    body: JSON.stringify({ identifier, phone }),
+  });
+}
+
+export async function forgotPassword({ identifier, phone, otp, newPassword }) {
   return request("/api/auth/forgot-password", {
     method: "POST",
-    body: JSON.stringify({ identifier, phone, newPassword }),
+    body: JSON.stringify({ identifier, phone, otp, newPassword }),
   });
 }

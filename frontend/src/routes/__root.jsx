@@ -63,7 +63,7 @@ export const Route = createRootRouteWithContext()({
             },
             {
                 rel: "stylesheet",
-                href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap",
+                href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap",
             },
         ],
     }),
@@ -76,6 +76,10 @@ function RootShell({ children }) {
     return (<html lang="en">
         <head>
           <HeadContent />
+          {/* Apply theme before first paint to prevent flash */}
+          <script dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('wf_theme');var d=window.matchMedia('(prefers-color-scheme: dark)').matches;if(t==='dark'||(t!=='light'&&d))document.documentElement.classList.add('dark')}catch(e){}})();`
+          }} />
         </head>
         <body suppressHydrationWarning>
           {children}
