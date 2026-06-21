@@ -113,7 +113,7 @@ function AdminLeaves() {
       {/* ── Quick Insights — 2 cols mobile, 3 cols sm+ ── */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
         {/* Pending Review */}
-        <div className="bg-primary-fixed/30 border border-border/40 rounded-2xl p-4 sm:p-5 flex items-center gap-3 sm:gap-4 card-shadow">
+        <div className="bg-primary-fixed/30 border border-border/40 rounded-2xl p-3 sm:p-5 flex items-center gap-3 sm:gap-4 card-shadow">
           <div className="size-11 bg-primary rounded-xl flex items-center justify-center shrink-0">
             <Clock className="size-5 text-primary-foreground" />
           </div>
@@ -124,7 +124,7 @@ function AdminLeaves() {
         </div>
 
         {/* Approved Today */}
-        <div className="bg-tertiary-fixed/30 border border-border/40 rounded-2xl p-4 sm:p-5 flex items-center gap-3 sm:gap-4 card-shadow">
+        <div className="bg-tertiary-fixed/30 border border-border/40 rounded-2xl p-3 sm:p-5 flex items-center gap-3 sm:gap-4 card-shadow">
           <div className="size-11 bg-tertiary rounded-xl flex items-center justify-center shrink-0">
             <CheckCircle2 className="size-5 text-on-tertiary" />
           </div>
@@ -135,7 +135,7 @@ function AdminLeaves() {
         </div>
 
         {/* Avg Response Time — full width on 2-col mobile */}
-        <div className="bg-secondary-fixed/30 border border-border/40 rounded-2xl p-4 sm:p-5 flex items-center gap-3 sm:gap-4 card-shadow col-span-2 sm:col-span-1">
+        <div className="bg-secondary-fixed/30 border border-border/40 rounded-2xl p-3 sm:p-5 flex items-center gap-3 sm:gap-4 card-shadow col-span-2 sm:col-span-1">
           <div className="size-11 bg-[#4648d4] rounded-xl flex items-center justify-center shrink-0">
             <BarChart3 className="size-5 text-white" />
           </div>

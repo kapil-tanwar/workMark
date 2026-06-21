@@ -291,3 +291,48 @@ main > div {
   from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+
+/* ── Global Button Cursor Pointer ── */
+button,
+[role="button"] {
+  cursor: pointer !important;
+}
+
+/* ── Clear browser default focus outline on inputs/selects/textareas ── */
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none !important;
+}
+
+/* ── Floating Colorful Bubbles Animations ── */
+.animate-bubble-1 {
+  animation: floatBubble1 6s ease-in-out infinite;
+}
+.animate-bubble-2 {
+  animation: floatBubble2 8s ease-in-out infinite;
+}
+.animate-bubble-3 {
+  animation: floatBubble3 5s ease-in-out infinite;
+}
+.animate-bubble-4 {
+  animation: floatBubble4 7s ease-in-out infinite;
+}
+
+@keyframes floatBubble1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(40px, -60px) scale(1.15); }
+  66% { transform: translate(-30px, 20px) scale(0.9); }
+}
+@keyframes floatBubble2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-60px, 40px) scale(1.2); }
+}
+@keyframes floatBubble3 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  40% { transform: translate(30px, 50px) scale(0.85); }
+}
+@keyframes floatBubble4 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  45% { transform: translate(-20px, -50px) scale(1.1); }
+}
