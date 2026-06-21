@@ -127,7 +127,7 @@ function AdminDashboard() {
 
       {/* Pop-up Dialog for Employee Details */}
       <Dialog open={activeModal !== null} onOpenChange={(open) => !open && setActiveModal(null)}>
-        <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col p-6">
+        <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col p-6 rounded-2xl">
           <DialogHeader className="pb-3 border-b border-border">
             <DialogTitle className="text-xl font-bold text-foreground flex items-center gap-2">
               {modalTitle} 

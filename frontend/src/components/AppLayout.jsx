@@ -134,14 +134,14 @@ export function AppLayout() {
 
           {/* Search */}
           <div className="flex items-center gap-4 flex-1 max-w-sm hidden sm:flex">
-            <div className="relative w-full">
+            {/* <div className="relative w-full">
               <Search className="size-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <input
                 className="w-full bg-muted border-none rounded-full pl-10 pr-4 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition"
                 placeholder="Search..."
                 type="text"
               />
-            </div>
+            </div> */}
           </div>
 
           <div className="flex-1 sm:hidden" />

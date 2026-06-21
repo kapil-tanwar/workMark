@@ -14,45 +14,32 @@ import { toast } from "sonner";
 import { formatLeaveDays, leaveRequestDays } from "@/lib/leave-utils";
 import { cn } from "@/lib/utils"; // used in StatusChip
 
-/* ── Dark palette ── */
-const S = {
-  bg: "#1e2022", border: "#434655", text: "#e2e2e5",
-  placeholder: "#90909a", surface: "#121416", card: "#1a1c1e",
-  primary: "#dde1ff", primaryText: "#071749",
-  muted: "#c4c5d7", accent: "#6ffbbe",
-  surfaceHigh: "#282a2d", outlineVariant: "rgba(67,70,85,0.4)",
-};
-
-/* ── Dark modal wrapper ── */
+/* ── Theme-aware modal wrapper ── */
 function DarkModal({ open, onClose, title, subtitle, children, footer }) {
   if (!open) return null;
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ backdropFilter: "blur(8px)", background: "rgba(0,0,0,0.65)" }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
-        className="w-full max-w-[560px] rounded-2xl border overflow-hidden"
-        style={{ background: S.card, borderColor: S.outlineVariant, boxShadow: "0 20px 50px -12px rgba(0,0,0,0.7)" }}
+        className="w-full max-w-[560px] rounded-2xl border bg-card border-border shadow-2xl overflow-hidden"
       >
         {/* Header */}
-        <div className="px-7 py-5 border-b flex justify-between items-start"
-          style={{ background: S.surface, borderColor: S.outlineVariant }}>
+        <div className="px-7 py-5 border-b flex justify-between items-start bg-muted/20 border-border">
           <div>
-            <h2 className="font-headline text-lg font-bold" style={{ color: S.text }}>{title}</h2>
-            {subtitle && <p className="text-sm mt-0.5" style={{ color: S.muted }}>{subtitle}</p>}
+            <h2 className="font-headline text-lg font-bold text-foreground">{title}</h2>
+            {subtitle && <p className="text-sm mt-0.5 text-muted-foreground">{subtitle}</p>}
           </div>
-          <button onClick={onClose} className="rounded-full p-1.5 hover:opacity-70 transition-opacity" style={{ color: S.muted }}>
+          <button onClick={onClose} className="rounded-full p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground transition-all cursor-pointer">
             <X className="size-4" />
           </button>
         </div>
         {/* Body */}
-        <div className="px-7 py-6 space-y-5">{children}</div>
+        <div className="px-7 py-6 space-y-5 text-foreground">{children}</div>
         {/* Footer */}
         {footer && (
-          <div className="px-7 py-5 border-t flex items-center justify-end gap-3"
-            style={{ borderColor: S.outlineVariant, background: S.card }}>
+          <div className="px-7 py-5 border-t flex items-center justify-end gap-3 border-border bg-muted/10">
             {footer}
           </div>
         )}
@@ -61,37 +48,26 @@ function DarkModal({ open, onClose, title, subtitle, children, footer }) {
   );
 }
 
-/* ── Dark field ── */
+/* ── Theme-aware input field ── */
 function DField({ icon: Icon, type = "text", value, onChange, placeholder, className = "", children, ...rest }) {
   const [focused, setFocused] = useState(false);
   if (children) {
     return (
       <div className={`relative ${className}`}>
-        <Icon className="absolute left-3.5 top-3.5 size-4 pointer-events-none z-10"
-          style={{ color: focused ? S.primary : S.placeholder }} />
         <select {...rest} value={value} onChange={onChange}
-          className="w-full h-12 pl-10 pr-8 rounded-xl text-sm border outline-none transition-all appearance-none"
-          style={{
-            background: S.bg, borderColor: focused ? S.primary : S.border, color: S.text,
-            boxShadow: focused ? "0 0 0 1px rgba(221,225,255,0.12)" : "none",
-          }}
+          className="w-full h-12 pl-4 pr-10 rounded-xl text-sm border outline-none transition-all appearance-none bg-background border-input text-foreground focus:border-primary focus:ring-1 focus:ring-primary shadow-sm cursor-pointer"
           onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
         >{children}</select>
-        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 size-4 pointer-events-none" style={{ color: S.placeholder }} />
+        <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 size-4 pointer-events-none text-muted-foreground" />
       </div>
     );
   }
   if (type === "textarea") {
     return (
       <div className={`relative ${className}`}>
-        <Icon className="absolute left-3.5 top-3.5 size-4 pointer-events-none z-10"
-          style={{ color: focused ? S.primary : S.placeholder }} />
+        <Icon className={cn("absolute left-3.5 top-3.5 size-4 pointer-events-none z-10 transition-colors", focused ? "text-primary" : "text-muted-foreground")} />
         <textarea {...rest} value={value} onChange={onChange} placeholder={placeholder} rows={3}
-          className="w-full pt-3 pl-10 pr-4 pb-3 rounded-xl text-sm border outline-none transition-all resize-none"
-          style={{
-            background: S.bg, borderColor: focused ? S.primary : S.border, color: S.text,
-            boxShadow: focused ? "0 0 0 1px rgba(221,225,255,0.12)" : "none",
-          }}
+          className="w-full pt-3 pl-10 pr-4 pb-3 rounded-xl text-sm border outline-none transition-all resize-none bg-background border-input text-foreground focus:border-primary focus:ring-1 focus:ring-primary shadow-sm"
           onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
         />
       </div>
@@ -99,14 +75,9 @@ function DField({ icon: Icon, type = "text", value, onChange, placeholder, class
   }
   return (
     <div className={`relative ${className}`}>
-      <Icon className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 pointer-events-none z-10"
-        style={{ color: focused ? S.primary : S.placeholder }} />
+      <Icon className={cn("absolute left-3.5 top-1/2 -translate-y-1/2 size-4 pointer-events-none z-10 transition-colors", focused ? "text-primary" : "text-muted-foreground")} />
       <input {...rest} type={type} value={value} onChange={onChange} placeholder={placeholder}
-        className="w-full h-12 pl-10 pr-4 rounded-xl text-sm border outline-none transition-all"
-        style={{
-          background: S.bg, borderColor: focused ? S.primary : S.border, color: S.text,
-          boxShadow: focused ? "0 0 0 1px rgba(221,225,255,0.12)" : "none",
-        }}
+        className="w-full h-12 pl-10 pr-4 rounded-xl text-sm border outline-none transition-all bg-background border-input text-foreground focus:border-primary focus:ring-1 focus:ring-primary shadow-sm"
         onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
       />
     </div>
@@ -228,11 +199,9 @@ function LeavePage() {
         footer={
           <>
             <button type="button" onClick={() => setCompOffOpen(false)}
-              className="px-5 py-2.5 rounded-xl text-sm font-bold hover:opacity-80 transition-opacity"
-              style={{ color: S.muted }}>Cancel</button>
+              className="px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-muted text-muted-foreground hover:text-foreground transition-all cursor-pointer">Cancel</button>
             <button type="button" onClick={handleCompOffSubmit} disabled={compOffSubmitting}
-              className="px-6 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-all active:scale-95 hover:opacity-90 disabled:opacity-60"
-              style={{ background: S.primary, color: S.primaryText }}>
+              className="px-6 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-all active:scale-95 hover:opacity-90 disabled:opacity-60 bg-primary text-primary-foreground cursor-pointer">
               {compOffSubmitting && <Loader2 className="size-4 animate-spin" />}
               Submit request
             </button>
@@ -240,25 +209,23 @@ function LeavePage() {
         }
       >
         <div className="space-y-2">
-          <label className="text-[11px] font-bold uppercase tracking-widest" style={{ color: S.muted }}>Overtime date</label>
-          <DField icon={CalendarDays} type="date" value={overtimeDate} onChange={(e) => setOvertimeDate(e.target.value)}
-            style={{ colorScheme: "dark" }} />
+          <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Overtime date</label>
+          <DField icon={CalendarDays} type="date" value={overtimeDate} onChange={(e) => setOvertimeDate(e.target.value)} />
         </div>
         <div className="space-y-2">
-          <label className="text-[11px] font-bold uppercase tracking-widest" style={{ color: S.muted }}>Overtime duration</label>
+          <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Overtime duration</label>
           <DField icon={AlarmClock} value={overtimeDuration} onChange={(e) => setOvertimeDuration(e.target.value)}>
             <option value="half">Half Day (+0.5 comp-off)</option>
             <option value="full">Full Day (+1 comp-off)</option>
           </DField>
         </div>
         <div className="space-y-2">
-          <label className="text-[11px] font-bold uppercase tracking-widest" style={{ color: S.muted }}>Reason / details</label>
+          <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Reason / details</label>
           <DField icon={FileText} type="textarea" placeholder="e.g. Project X deadline, Critical server maintenance..."
             value={overtimeReason} onChange={(e) => setOvertimeReason(e.target.value)} />
         </div>
-        <div className="flex items-start gap-3 px-4 py-3 rounded-xl border text-sm"
-          style={{ background: "rgba(221,225,255,0.05)", borderColor: "rgba(221,225,255,0.12)", color: S.muted }}>
-          <Info className="size-4 mt-0.5 shrink-0" style={{ color: S.primary }} />
+        <div className="flex items-start gap-3 px-4 py-3 rounded-xl border text-sm bg-primary/5 border-primary/20 text-muted-foreground">
+          <Info className="size-4 mt-0.5 shrink-0 text-primary" />
           <span>Credits are subject to manager approval based on verified logs. Standard processing time is 1–2 business days.</span>
         </div>
       </DarkModal>
@@ -271,11 +238,9 @@ function LeavePage() {
         footer={
           <>
             <button type="button" onClick={() => setOpen(false)}
-              className="px-5 py-2.5 rounded-xl text-sm font-bold hover:opacity-80 transition-opacity"
-              style={{ color: S.muted }}>Cancel</button>
+              className="px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-muted text-muted-foreground hover:text-foreground transition-all cursor-pointer">Cancel</button>
             <button type="button" onClick={handleSubmit} disabled={submitting}
-              className="px-6 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-all active:scale-95 hover:opacity-90 disabled:opacity-60"
-              style={{ background: S.primary, color: S.primaryText }}>
+              className="px-6 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-all active:scale-95 hover:opacity-90 disabled:opacity-60 bg-primary text-primary-foreground cursor-pointer">
               {submitting && <Loader2 className="size-4 animate-spin" />}
               Submit Request
             </button>
@@ -284,35 +249,32 @@ function LeavePage() {
       >
         {/* Leave type */}
         <div className="space-y-2">
-          <label className="text-[11px] font-bold uppercase tracking-widest" style={{ color: S.muted }}>Leave type</label>
+          <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Leave type</label>
           <DField icon={CalendarDays} value={type} onChange={(e) => setType(e.target.value)}>
             <option value="Earned Leave">Earned Leave</option>
             <option value="Comp-Off Leave">Comp-Off Leave</option>
           </DField>
-          <p className="text-[11px] mt-1" style={{ color: S.muted }}>
+          <p className="text-[11px] mt-1 text-muted-foreground">
             Available: {formatLeaveDays(bal.remainingByType[type] ?? 0)} day(s)
           </p>
         </div>
 
         {/* Duration stepper */}
         <div className="space-y-2">
-          <label className="text-[11px] font-bold uppercase tracking-widest" style={{ color: S.muted }}>Duration (days)</label>
+          <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Duration (days)</label>
           <div className="flex items-center gap-3">
             <button type="button"
-              className="size-10 rounded-xl border text-lg font-bold flex items-center justify-center transition-all hover:opacity-80 active:scale-95"
-              style={{ background: S.bg, borderColor: S.border, color: S.text }}
+              className="size-10 rounded-xl border text-lg font-bold flex items-center justify-center transition-all hover:bg-muted active:scale-95 border-border bg-background text-foreground cursor-pointer"
               disabled={leaveDuration <= 0.5}
               onClick={() => { const n = Math.max(0.5, leaveDuration - 0.5); setLeaveDuration(n); if (n === 0.5 && start) setEnd(start); }}
             >−</button>
             <input type="number" step="0.5" min="0.5"
-              className="flex-1 h-10 text-center rounded-xl border text-lg font-bold outline-none"
-              style={{ background: S.bg, borderColor: S.border, color: S.text }}
+              className="flex-1 h-10 text-center rounded-xl border text-lg font-bold outline-none bg-background border-input text-foreground focus:border-primary focus:ring-1 focus:ring-primary shadow-sm"
               value={leaveDuration}
               onChange={(e) => { const v = parseFloat(e.target.value); if (!isNaN(v)) { setLeaveDuration(v); if (v === 0.5 && start) setEnd(start); } }}
             />
             <button type="button"
-              className="size-10 rounded-xl border text-lg font-bold flex items-center justify-center transition-all hover:opacity-80 active:scale-95"
-              style={{ background: S.bg, borderColor: S.border, color: S.text }}
+              className="size-10 rounded-xl border text-lg font-bold flex items-center justify-center transition-all hover:bg-muted active:scale-95 border-border bg-background text-foreground cursor-pointer"
               onClick={() => setLeaveDuration(leaveDuration + 0.5)}
             >+</button>
           </div>
@@ -321,18 +283,18 @@ function LeavePage() {
         {/* Dates */}
         {leaveDuration === 0.5 ? (
           <div className="space-y-2">
-            <label className="text-[11px] font-bold uppercase tracking-widest" style={{ color: S.muted }}>Date</label>
+            <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Date</label>
             <DField icon={CalendarDays} type="date" value={start}
               onChange={(e) => { setStart(e.target.value); setEnd(e.target.value); }} />
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <label className="text-[11px] font-bold uppercase tracking-widest" style={{ color: S.muted }}>Start date</label>
+              <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Start date</label>
               <DField icon={CalendarDays} type="date" value={start} onChange={handleStartDateChange} />
             </div>
             <div className="space-y-2">
-              <label className="text-[11px] font-bold uppercase tracking-widest" style={{ color: S.muted }}>End date</label>
+              <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">End date</label>
               <DField icon={CalendarDays} type="date" value={end} onChange={handleEndDateChange} />
             </div>
           </div>
@@ -340,7 +302,7 @@ function LeavePage() {
 
         {/* Reason */}
         <div className="space-y-2">
-          <label className="text-[11px] font-bold uppercase tracking-widest" style={{ color: S.muted }}>Reason / Notes</label>
+          <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Reason / Notes</label>
           <DField icon={FileText} type="textarea" placeholder="Provide a brief explanation for your request..."
             value={reason} onChange={(e) => setReason(e.target.value)} />
         </div>
@@ -353,7 +315,7 @@ function LeavePage() {
           <p className="text-sm text-muted-foreground mt-1.5">Apply for leave, request comp-off credits, and track your balance.</p>
         </div>
         {/* Buttons — always side by side, wrap gracefully */}
-        <div className="flex flex-row gap-2 shrink-0 flex-wrap">
+        <div className="flex flex-row gap-2 shrink-0 flex-wrap  px-2 py-4 rounded-xl">
           <button
             onClick={() => setCompOffOpen(true)}
             className="flex items-center gap-2 border border-border/60 bg-card text-foreground px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-muted active:scale-95 transition-all whitespace-nowrap"
@@ -388,10 +350,10 @@ function LeavePage() {
         </div>
 
         {/* Total Leave Balance — full width on 2-col mobile */}
-        <div className="rounded-2xl border border-border/40 p-4 sm:p-5 bg-primary-fixed/30 card-shadow col-span-2 sm:col-span-1">
-          <div className="text-[11px] font-bold uppercase tracking-wider text-on-primary-fixed">Total Leave Balance</div>
-          <div className="mt-2 text-3xl font-bold text-on-primary-fixed font-headline">{formatLeaveDays(bal.totalRemaining)}</div>
-          <p className="text-[11px] mt-1 text-on-primary-fixed opacity-80">Combined earned + comp-off available</p>
+        <div className="rounded-2xl border border-border/40 p-4 sm:p-5 bg-primary-fixed/30 card-shadow col-span-2 sm:col-span-1 ">
+          <div className="text-[11px] font-bold uppercase tracking-wider text-on-primary-fixed dark:text-white opacity-80">Total Leave Balance</div>
+          <div className="mt-2 text-3xl font-bold text-on-primary-fixed dark:text-white opacity-80 font-headline">{formatLeaveDays(bal.totalRemaining)}</div>
+          <p className="text-[11px] mt-1 text-on-primary-fixed dark:text-white opacity-80">Combined earned + comp-off available</p>
         </div>
       </div>
 

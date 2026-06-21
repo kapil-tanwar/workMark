@@ -1,46 +1,19 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { BadgeCheck, Phone, Lock, Eye, EyeOff, ArrowLeft, CheckCircle2, Loader2, ArrowRight } from "lucide-react";
+import { BadgeCheck, Phone, Lock, Eye, EyeOff, ArrowLeft, CheckCircle2, Loader2, ArrowRight, Briefcase } from "lucide-react";
 import { forgotPassword, sendResetOtp } from "@/lib/api";
 import { toast } from "sonner";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { useAuth } from "@/lib/auth-context";
 
 export const Route = createFileRoute("/forgot-password")({
   head: () => ({ meta: [{ title: "Reset password — WorkFlow HR" }] }),
   component: ForgotPage,
 });
 
-const S = {
-  bg: "#1e2022", border: "#434655", text: "#e2e2e5",
-  placeholder: "#90909a", surface: "#121416", card: "#282a2d",
-  primary: "#dde1ff", primaryText: "#071749",
-  muted: "#c4c5d7", accent: "#6ffbbe",
-  outlineVariant: "rgba(67,70,85,0.4)",
-};
-
-function DarkField({ icon: Icon, type = "text", value, onChange, placeholder, rightSlot }) {
-  const [focused, setFocused] = useState(false);
-  return (
-    <div className="relative group">
-      <Icon
-        className="absolute left-4 top-1/2 -translate-y-1/2 size-[18px] pointer-events-none transition-colors"
-        style={{ color: focused ? S.primary : S.placeholder }}
-      />
-      <input
-        type={type} value={value} onChange={onChange} placeholder={placeholder}
-        className="w-full h-[52px] pl-12 pr-4 rounded-xl text-sm border outline-none transition-all"
-        style={{
-          background: "#121416", borderColor: focused ? S.primary : S.border,
-          color: S.text, paddingRight: rightSlot ? "2.75rem" : undefined,
-          boxShadow: focused ? "0 0 0 2px rgba(221,225,255,0.1)" : "none",
-        }}
-        onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
-      />
-      {rightSlot}
-    </div>
-  );
-}
-
 function ForgotPage() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const [identifier, setIdentifier] = useState("");
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
@@ -50,6 +23,14 @@ function ForgotPage() {
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
   const [simulatedOtp, setSimulatedOtp] = useState("");
+
+  const [idFocus, setIdFocus] = useState(false);
+  const [phoneFocus, setPhoneFocus] = useState(false);
+  const [otpFocus, setOtpFocus] = useState(false);
+  const [pwFocus, setPwFocus] = useState(false);
+
+  const backLink = user ? (user.role === 'admin' ? '/admin/settings' : '/profile') : '/login';
+  const backText = user ? "Back to settings" : "Back to login";
 
   async function handleSendOtp(e) {
     e.preventDefault();
@@ -83,59 +64,49 @@ function ForgotPage() {
   }
 
   return (
-    <div
-      className="min-h-screen flex flex-col antialiased"
-      style={{
-        backgroundColor: S.surface, color: S.text,
-        backgroundImage:
-          "radial-gradient(at 0% 0%, rgba(67,80,131,0.15) 0px, transparent 50%), radial-gradient(at 100% 0%, rgba(79,222,163,0.05) 0px, transparent 50%)",
-      }}
-    >
-      {/* Header */}
-      <header className="w-full flex items-center justify-center pt-10 pb-2">
-        <Link to="/" className="flex items-center gap-3 hover:opacity-90 transition-opacity">
-          <div className="size-10 rounded-xl flex items-center justify-center font-headline font-black text-base"
-            style={{ background: S.primary, color: S.primaryText }}>W</div>
-          <span className="font-headline text-2xl font-bold" style={{ color: S.primary }}>WorkFlow HR</span>
+    <div className="min-h-screen flex flex-col antialiased bg-background text-foreground relative overflow-hidden">
+      <div className="absolute inset-0 pointer-events-none opacity-20">
+        <div className="absolute inset-0 bg-[radial-gradient(at_0%_0%,var(--color-primary)_0px,transparent_50%),radial-gradient(at_100%_0%,var(--color-tertiary)_0px,transparent_50%)]" />
+      </div>
+
+      {/* Header/Navbar */}
+      <header className="w-full flex items-center justify-between px-6 py-4 absolute top-0 left-0 right-0 z-50">
+        <Link to="/" className="flex items-center gap-2 hover:opacity-90 transition-opacity">
+          <div className="size-8 rounded-lg flex items-center justify-center font-headline font-black text-sm bg-primary text-primary-foreground">
+            <Briefcase className="size-4" />
+          </div>
+          <span className="font-headline text-lg font-bold text-primary">WorkFlow HR</span>
         </Link>
+        <ThemeToggle />
       </header>
 
-      <main className="flex-1 flex items-center justify-center px-5 py-12">
-        <div
-          className="w-full max-w-[480px] rounded-2xl border p-8"
-          style={{
-            background: S.card, borderColor: S.outlineVariant,
-            boxShadow: "0 4px 24px -4px rgba(0,0,0,0.4)",
-          }}
-        >
+      <main className="flex-1 flex items-center justify-center px-5 py-12 relative z-10">
+        <div className="w-full max-w-[480px] rounded-2xl border p-8 bg-card border-border/50 shadow-xl">
           {sent ? (
             /* ── Success state ── */
             <div className="text-center space-y-5 py-4">
-              <div className="size-14 mx-auto rounded-full flex items-center justify-center"
-                style={{ background: "rgba(111,251,190,0.12)" }}>
-                <CheckCircle2 className="size-7" style={{ color: S.accent }} />
+              <div className="size-14 mx-auto rounded-full flex items-center justify-center bg-success/10 text-success">
+                <CheckCircle2 className="size-7" />
               </div>
               <div>
-                <h2 className="font-headline text-xl font-bold mb-2" style={{ color: S.text }}>
+                <h2 className="font-headline text-xl font-bold mb-2 text-foreground">
                   Password Reset Successful
                 </h2>
-                <p className="text-sm" style={{ color: S.muted }}>
+                <p className="text-sm text-muted-foreground">
                   Your password has been reset. You can now sign in with your new password.
                 </p>
               </div>
-              <Link to="/login"
-                className="inline-flex items-center gap-1.5 text-sm font-bold hover:underline"
-                style={{ color: S.primary }}>
-                <ArrowLeft className="size-4" /> Back to sign in
+              <Link to={backLink} className="inline-flex items-center gap-1.5 text-sm font-bold hover:underline text-primary">
+                <ArrowLeft className="size-4" /> {backText}
               </Link>
             </div>
           ) : (
             <>
               <div className="text-center mb-8">
-                <h1 className="font-headline text-xl font-bold mb-2" style={{ color: S.text }}>
+                <h1 className="font-headline text-xl font-bold mb-2 text-foreground">
                   {step === 1 ? "Reset password" : "Enter OTP & new password"}
                 </h1>
-                <p className="text-sm" style={{ color: S.muted }}>
+                <p className="text-sm text-muted-foreground">
                   {step === 1
                     ? "Enter your details to receive a secure verification code."
                     : "Check your phone/WhatsApp for the 6-digit OTP."}
@@ -145,24 +116,33 @@ function ForgotPage() {
               {step === 1 ? (
                 <form onSubmit={handleSendOtp} className="space-y-5">
                   <div className="space-y-2">
-                    <label className="text-[11px] font-bold uppercase tracking-widest" style={{ color: S.muted }}>
+                    <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
                       Email or Employee ID
                     </label>
-                    <DarkField icon={BadgeCheck} type="text" required
-                      placeholder="j.doe@company.com or EMP-1001"
-                      value={identifier} onChange={(e) => setIdentifier(e.target.value)} />
+                    <div className="relative">
+                      <BadgeCheck className={`absolute left-4 top-1/2 -translate-y-1/2 size-[18px] pointer-events-none transition-colors ${idFocus ? 'text-primary' : 'text-muted-foreground'}`} />
+                      <input type="text" required placeholder=" Email or EMP ID"
+                        value={identifier} onChange={(e) => setIdentifier(e.target.value)}
+                        className="w-full h-[52px] pl-12 pr-4 rounded-xl text-sm border outline-none transition-all bg-background border-input text-foreground focus:border-primary focus:ring-1 focus:ring-primary shadow-sm"
+                        onFocus={() => setIdFocus(true)} onBlur={() => setIdFocus(false)}
+                      />
+                    </div>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[11px] font-bold uppercase tracking-widest" style={{ color: S.muted }}>
+                    <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
                       Phone Number
                     </label>
-                    <DarkField icon={Phone} type="tel" required
-                      placeholder="+1 (555) 000-0000"
-                      value={phone} onChange={(e) => setPhone(e.target.value)} />
+                    <div className="relative">
+                      <Phone className={`absolute left-4 top-1/2 -translate-y-1/2 size-[18px] pointer-events-none transition-colors ${phoneFocus ? 'text-primary' : 'text-muted-foreground'}`} />
+                      <input type="tel" required placeholder="+919876543210"
+                        value={phone} onChange={(e) => setPhone(e.target.value)}
+                        className="w-full h-[52px] pl-12 pr-4 rounded-xl text-sm border outline-none transition-all bg-background border-input text-foreground focus:border-primary focus:ring-1 focus:ring-primary shadow-sm"
+                        onFocus={() => setPhoneFocus(true)} onBlur={() => setPhoneFocus(false)}
+                      />
+                    </div>
                   </div>
                   <button type="submit" disabled={loading}
-                    className="w-full h-[52px] rounded-xl font-bold text-sm flex items-center justify-center gap-2.5 transition-all active:scale-[0.98] hover:opacity-90 disabled:opacity-60 mt-2"
-                    style={{ background: S.primary, color: S.primaryText }}>
+                    className="w-full h-[52px] rounded-xl font-bold text-sm flex items-center justify-center gap-2.5 transition-all active:scale-[0.98] hover:opacity-90 disabled:opacity-60 mt-2 bg-primary text-primary-foreground">
                     {loading
                       ? <Loader2 className="size-4 animate-spin" />
                       : <><span>Send Verification OTP</span><ArrowRight className="size-4" /></>
@@ -172,69 +152,70 @@ function ForgotPage() {
               ) : (
                 <form onSubmit={handleResetPassword} className="space-y-5">
                   {/* Confirmation block */}
-                  <div className="px-4 py-3 rounded-xl border" style={{ background: "#1a1c1e", borderColor: S.border }}>
-                    <p className="text-[11px] font-bold uppercase tracking-widest mb-1" style={{ color: S.muted }}>Sending OTP to</p>
-                    <p className="text-sm font-semibold truncate" style={{ color: S.text }}>{identifier}</p>
-                    <p className="text-xs" style={{ color: S.muted }}>{phone}</p>
+                  <div className="px-4 py-3 rounded-xl border bg-muted/30 border-border">
+                    <p className="text-[11px] font-bold uppercase tracking-widest mb-1 text-muted-foreground">Sending OTP to</p>
+                    <p className="text-sm font-semibold truncate text-foreground">{identifier}</p>
+                    <p className="text-xs text-muted-foreground">{phone}</p>
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-[11px] font-bold uppercase tracking-widest" style={{ color: S.muted }}>
+                    <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
                       6-Digit OTP Code
                     </label>
-                    <DarkField icon={Lock} type="text" required
-                      placeholder="Enter 6-digit OTP"
-                      value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))} />
+                    <div className="relative">
+                      <Lock className={`absolute left-4 top-1/2 -translate-y-1/2 size-[18px] pointer-events-none transition-colors ${otpFocus ? 'text-primary' : 'text-muted-foreground'}`} />
+                      <input type="text" required placeholder="Enter 6-digit OTP"
+                        value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                        className="w-full h-[52px] pl-12 pr-4 rounded-xl text-sm border outline-none transition-all bg-background border-input text-foreground focus:border-primary focus:ring-1 focus:ring-primary shadow-sm"
+                        onFocus={() => setOtpFocus(true)} onBlur={() => setOtpFocus(false)}
+                      />
+                    </div>
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-[11px] font-bold uppercase tracking-widest" style={{ color: S.muted }}>
+                    <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
                       New Password
                     </label>
-                    <DarkField
-                      icon={Lock} type={showPassword ? "text" : "password"} required
-                      placeholder="At least 6 characters"
-                      value={newPassword} onChange={(e) => setNewPassword(e.target.value)}
-                      rightSlot={
-                        <button type="button" onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-4 top-1/2 -translate-y-1/2 hover:opacity-70 transition-opacity"
-                          style={{ color: S.placeholder }}>
-                          {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                        </button>
-                      }
-                    />
+                    <div className="relative">
+                      <Lock className={`absolute left-4 top-1/2 -translate-y-1/2 size-[18px] pointer-events-none transition-colors ${pwFocus ? 'text-primary' : 'text-muted-foreground'}`} />
+                      <input type={showPassword ? "text" : "password"} required placeholder="At least 6 characters"
+                        value={newPassword} onChange={(e) => setNewPassword(e.target.value)}
+                        className="w-full h-[52px] pl-12 pr-11 rounded-xl text-sm border outline-none transition-all bg-background border-input text-foreground focus:border-primary focus:ring-1 focus:ring-primary shadow-sm"
+                        onFocus={() => setPwFocus(true)} onBlur={() => setPwFocus(false)}
+                      />
+                      <button type="button" onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 hover:opacity-70 transition-opacity text-muted-foreground">
+                        {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                      </button>
+                    </div>
                   </div>
 
                   {simulatedOtp && (
-                    <div className="px-4 py-3 rounded-xl border text-xs"
-                      style={{ background: "rgba(221,225,255,0.06)", borderColor: "rgba(221,225,255,0.15)", color: S.primary }}>
+                    <div className="px-4 py-3 rounded-xl border text-xs bg-primary/10 border-primary/20 text-primary">
                       <p className="font-bold mb-1">OTP Sandbox (dev only)</p>
                       <p>OTP: <span className="font-mono font-bold tracking-widest">{simulatedOtp}</span></p>
                     </div>
                   )}
 
                   <button type="submit" disabled={loading}
-                    className="w-full h-[52px] rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] hover:opacity-90 disabled:opacity-60"
-                    style={{ background: S.primary, color: S.primaryText }}>
+                    className="w-full h-[52px] rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] hover:opacity-90 disabled:opacity-60 bg-primary text-primary-foreground">
                     {loading ? <Loader2 className="size-4 animate-spin" /> : "Verify & Reset Password"}
                   </button>
 
                   <button type="button" onClick={() => setStep(1)}
-                    className="w-full text-center text-xs hover:underline transition-colors"
-                    style={{ color: S.muted }}>
+                    className="w-full text-center text-xs hover:underline transition-colors text-muted-foreground">
                     Change email or phone number
                   </button>
                 </form>
               )}
 
-              <div className="mt-8 pt-6 border-t flex flex-col items-center gap-3" style={{ borderColor: S.outlineVariant }}>
-                <Link to="/login" className="flex items-center gap-1.5 text-sm font-semibold hover:underline"
-                  style={{ color: S.primary }}>
-                  <ArrowLeft className="size-4" /> Back to login
+              <div className="mt-8 pt-6 border-t flex flex-col items-center gap-3 border-border/50">
+                <Link to={backLink} className="flex items-center gap-1.5 text-sm font-semibold hover:underline text-primary">
+                  <ArrowLeft className="size-4" /> {backText}
                 </Link>
-                <p className="text-xs text-center max-w-[300px]" style={{ color: "#6b6d7e" }}>
+                <p className="text-xs text-center max-w-[300px] text-muted-foreground">
                   No access to your registered contact methods?{" "}
-                  <span className="font-semibold cursor-pointer" style={{ color: S.primary }}>Contact HR Admin</span>
+                  <span className="font-semibold cursor-pointer text-primary">Contact HR Admin</span>
                 </p>
               </div>
             </>

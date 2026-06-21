@@ -86,12 +86,12 @@ function EmployeeFormModal({ open, onOpenChange, edit, form, setForm, onSave, sa
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Full Name</label>
-              <FieldInput icon={User} placeholder="e.g. John Doe" value={form.name}
+              <FieldInput icon={User} placeholder="Your Name" value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })} />
             </div>
             <div className="space-y-1.5">
               <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Email Address <span className="opacity-50 normal-case font-normal">Optional</span></label>
-              <FieldInput icon={Mail} type="email" placeholder="john@company.com" value={form.email}
+              <FieldInput icon={Mail} type="email" placeholder="name@company.com" value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })} />
             </div>
           </div>
@@ -105,7 +105,7 @@ function EmployeeFormModal({ open, onOpenChange, edit, form, setForm, onSave, sa
             </div>
             <div className="space-y-1.5">
               <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Phone Number</label>
-              <FieldInput icon={Phone} type="tel" placeholder="+1 (555) 000-0000" value={form.phone}
+              <FieldInput icon={Phone} type="tel" placeholder="+91 98765 43210" value={form.phone}
                 onChange={(e) => setForm({ ...form, phone: e.target.value })} />
             </div>
           </div>
