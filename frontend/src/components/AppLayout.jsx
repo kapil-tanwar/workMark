@@ -2,6 +2,7 @@ import { Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-route
 import { useAuth } from "@/lib/auth-context";
 import { useWorkflowRefresh } from "@/hooks/use-workflow-refresh";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { NotificationBell } from "@/components/NotificationBell";
 import {
   LayoutDashboard, Clock, CalendarDays, User as UserIcon,
   Users, ClipboardCheck, FileBarChart, Settings, LogOut,
@@ -39,10 +40,28 @@ export function AppLayout() {
   useWorkflowRefresh();
 
   useEffect(() => {
-    if (!loading && !user) navigate({ to: "/login" });
-  }, [user, loading, navigate]);
+    if (!loading && !user) {
+      navigate({ to: "/login" });
+      return;
+    }
+    if (!loading && user) {
+      const isAdmin = user.role === "admin";
+      if (isAdmin && !path.startsWith("/admin")) {
+        logout();
+        navigate({ to: "/admin/login" });
+      } else if (!isAdmin && path.startsWith("/admin")) {
+        logout();
+        navigate({ to: "/login" });
+      }
+    }
+  }, [user, loading, navigate, path, logout]);
 
-  if (!user) return null;
+  const isUnauthorized = user && (
+    (user.role === "admin" && !path.startsWith("/admin")) ||
+    (user.role !== "admin" && path.startsWith("/admin"))
+  );
+
+  if (!user || isUnauthorized) return null;
 
   const nav = user.role === "admin" ? adminNav : employeeNav;
   const initials = user.name.split(" ").map((s) => s[0]).slice(0, 2).join("").toUpperCase();
@@ -148,6 +167,7 @@ export function AppLayout() {
 
           {/* Right section: theme + user */}
           <div className="flex items-center gap-3">
+            <NotificationBell />
             <ThemeToggle />
 
             {/* User info */}

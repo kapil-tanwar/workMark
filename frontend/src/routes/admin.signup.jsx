@@ -6,14 +6,14 @@ import { toast } from "sonner";
 import { getSavedUser } from "@/lib/auth-helpers";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
-export const Route = createFileRoute("/signup")({
+export const Route = createFileRoute("/admin/signup")({
   beforeLoad: () => {
     if (typeof window === "undefined") return;
     const token = localStorage.getItem("wf_token");
     const user = getSavedUser();
     if (token && user) throw redirect({ to: user.role === "admin" ? "/admin" : "/dashboard" });
   },
-  head: () => ({ meta: [{ title: "Create account — WorkFlow HR" }] }),
+  head: () => ({ meta: [{ title: "Admin Create account — WorkFlow HR" }] }),
   component: SignupPage,
 });
 
@@ -25,7 +25,7 @@ function SignupPage() {
   const [password, setPassword] = useState("");
   const [employeeId, setEmployeeId] = useState("");
   const [phone, setPhone] = useState("");
-  const role = "employee";
+  const role = "admin";
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -39,9 +39,14 @@ function SignupPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      const u = await signup({ name, email, password, role, employeeId, phone });
-      toast.success("Account created!");
-      navigate({ to: u.role === "admin" ? "/admin" : "/dashboard" });
+      const result = await signup({ name, email, password, role, employeeId, phone });
+      if (result.pending) {
+        toast.success(result.message || "Your admin account request has been submitted for approval.");
+        navigate({ to: "/admin/login" });
+      } else {
+        toast.success("Account created!");
+        navigate({ to: "/admin" });
+      }
     } catch (err) {
       toast.error(err.message);
     } finally {
@@ -126,7 +131,7 @@ function SignupPage() {
 
         <div className="relative z-10 w-full max-w-[440px] space-y-6">
           <div className="hidden md:block">
-            <h2 className="font-headline text-3xl font-bold mb-1.5 text-foreground">Create Account</h2>
+            <h2 className="font-headline text-3xl font-bold mb-1.5 text-foreground">Admin Create Account</h2>
             <p className="text-sm text-muted-foreground">Join the WorkFlow HR ecosystem</p>
           </div>
 

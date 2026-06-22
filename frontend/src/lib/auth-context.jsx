@@ -45,7 +45,7 @@ export function AuthProvider({ children }) {
       },
       signup: async (input) => {
         const employeeId = validateEmployeeId(input.employeeId);
-        const { user: u } = await api.signup({
+        const result = await api.signup({
           name: input.name,
           email: input.email?.trim() || "",
           password: input.password,
@@ -53,6 +53,8 @@ export function AuthProvider({ children }) {
           employeeId,
           phone: input.phone.trim(),
         });
+        if (result.pending) return result;
+        const u = result.user;
         setUser(u);
         localStorage.setItem("wf_user", JSON.stringify(u));
         await refreshStore(u);

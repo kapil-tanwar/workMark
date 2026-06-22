@@ -4,7 +4,15 @@ import { useWorkflowRefresh } from "@/hooks/use-workflow-refresh";
 import { PageHeader } from "@/components/wf-ui";
 import { Download, FileSpreadsheet, FileText, BarChart3 } from "lucide-react";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+
+function recordExport(name, fmt) {
+  const h = JSON.parse(localStorage.getItem("wf_exports") || "[]");
+  h.unshift({ name, fmt, date: new Date().toLocaleString() });
+  const sliced = h.slice(0, 50);
+  localStorage.setItem("wf_exports", JSON.stringify(sliced));
+  return sliced;
+}
 
 export const Route = createFileRoute("/_app/admin/reports")({
   head: () => ({ meta: [{ title: "Reports — WorkFlow HR" }] }),
@@ -64,13 +72,20 @@ function ReportsPage() {
   const att = store.getAttendance().filter((a) => a.date.startsWith(ym));
   const leaves = store.getLeaves();
 
+  const [history, setHistory] = useState([]);
+  useEffect(() => {
+    setHistory(JSON.parse(localStorage.getItem("wf_exports") || "[]"));
+  }, []);
+
   function exportAttendance() {
     const rows = [["Employee", "Date", "Check In", "Check Out", "Status"]];
     att.forEach((a) => {
       const u = users.find((x) => x.id === a.userId);
       rows.push([a.userName || u?.name || "", a.date, a.checkIn || "", a.checkOut || "", a.status]);
     });
-    downloadCSV(`attendance-${ym}.csv`, rows);
+    const filename = `attendance-${ym}.csv`;
+    downloadCSV(filename, rows);
+    setHistory(recordExport(filename, "CSV"));
     toast.success("Attendance report exported");
   }
 
@@ -80,7 +95,9 @@ function ReportsPage() {
       const u = users.find((x) => x.id === l.userId);
       rows.push([l.userName || u?.name || "", l.type, l.startDate, l.endDate, l.status, l.reason]);
     });
-    downloadCSV(`leaves-${ym}.csv`, rows);
+    const filename = `leaves-${ym}.csv`;
+    downloadCSV(filename, rows);
+    setHistory(recordExport(filename, "CSV"));
     toast.success("Leave report exported");
   }
 
@@ -189,16 +206,17 @@ function ReportsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border/30">
-              {[
-                { name: `${ym.replace("-", "_")}_Attendance_Summary`, fmt: "CSV", date: "Today • 00:01 AM", color: "bg-[rgba(78,222,163,0.15)] text-tertiary" },
-                { name: `${ym.replace("-", "_")}_Leave_Report`, fmt: "CSV", date: "Today • 00:01 AM", color: "bg-[rgba(78,222,163,0.15)] text-tertiary" },
-                { name: "May_Attendance_Summary_Final", fmt: "CSV", date: "Jun 01, 2025 • 09:12 AM", color: "bg-[rgba(78,222,163,0.15)] text-tertiary" },
-                { name: "Q1_Leave_Audit_Report", fmt: "PDF", date: "May 28, 2025 • 14:45 PM", color: "bg-[rgba(186,26,26,0.10)] text-destructive" },
-              ].map((row) => (
-                <tr key={row.name} className="hover:bg-muted/25 transition-colors group">
+              {history.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="px-6 py-8 text-center text-sm text-muted-foreground">
+                    No export history available.
+                  </td>
+                </tr>
+              ) : history.map((row, idx) => (
+                <tr key={idx} className="hover:bg-muted/25 transition-colors group">
                   <td className="px-6 py-4 font-semibold text-sm text-foreground">{row.name}</td>
                   <td className="px-4 py-4">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold ${row.color}`}>
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[rgba(78,222,163,0.15)] text-tertiary">
                       {row.fmt}
                     </span>
                   </td>

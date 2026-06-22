@@ -15,12 +15,16 @@ export const Route = createFileRoute("/_app")({
         const isAdmin = user.role === "admin";
         if (isAdmin) {
             if (!path.startsWith("/admin")) {
-                throw redirect({ to: "/admin" });
+                localStorage.removeItem("wf_token");
+                localStorage.removeItem("wf_user");
+                throw redirect({ to: "/admin/login" });
             }
         }
         else {
             if (path.startsWith("/admin")) {
-                throw redirect({ to: "/dashboard" });
+                localStorage.removeItem("wf_token");
+                localStorage.removeItem("wf_user");
+                throw redirect({ to: "/login" });
             }
         }
     },

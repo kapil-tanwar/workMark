@@ -3,6 +3,7 @@ import { z } from "zod";
 import CompOffRequest from "../models/CompOffRequest.js";
 import User from "../models/User.js";
 import { authRequired, adminOnly } from "../middleware/auth.js";
+import { notifyAdmins, notifyUser } from "../services/notification.js";
 
 const router = Router();
 router.use(authRequired);
@@ -35,6 +36,10 @@ router.post("/", async (req, res, next) => {
   try {
     const data = createSchema.parse(req.body);
     const request = await CompOffRequest.create({ ...data, user: req.user._id });
+    
+    // Notify admins
+    await notifyAdmins("New Comp-Off Request", `${req.user.name} has requested a ${data.duration}-day comp-off for ${data.overtimeDate}.`, "comp-off", request._id);
+
     res.status(201).json({ request });
   } catch (e) {
     next(e);
@@ -63,6 +68,9 @@ router.patch("/:id/approve", adminOnly, async (req, res, next) => {
       { new: true }
     ).populate("user", "name email employeeId department");
 
+    // Notify user
+    await notifyUser(request.user._id, "Comp-Off Approved", `Your ${request.duration}-day comp-off request for ${request.overtimeDate} has been approved.`, "comp-off", request._id);
+
     res.json({ request });
   } catch (e) {
     next(e);
@@ -75,8 +83,12 @@ router.patch("/:id/reject", adminOnly, async (req, res, next) => {
       req.params.id,
       { status: "Rejected", decidedBy: req.user._id, decidedAt: new Date() },
       { new: true }
-    );
+    ).populate("user", "name");
     if (!request) return next({ status: 404, message: "Not found" });
+
+    // Notify user
+    await notifyUser(request.user._id, "Comp-Off Rejected", `Your ${request.duration}-day comp-off request for ${request.overtimeDate} has been rejected.`, "comp-off", request._id);
+
     res.json({ request });
   } catch (e) {
     next(e);

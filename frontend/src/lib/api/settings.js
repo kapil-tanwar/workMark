@@ -21,3 +21,15 @@ export async function patchSettings(body) {
     monthlyEarnedAccrual: s.monthlyEarnedAccrual ?? 1.5,
   };
 }
+export async function getAdminRequests() {
+  const data = await request("/api/settings/admin-requests");
+  return data.requests || [];
+}
+
+export async function approveAdminRequest(id) {
+  return request(`/api/settings/admin-requests/${id}/approve`, { method: "PATCH" });
+}
+
+export async function rejectAdminRequest(id) {
+  return request(`/api/settings/admin-requests/${id}/reject`, { method: "PATCH" });
+}

@@ -17,7 +17,7 @@ import {
   Building, Clock, CalendarDays, Pencil, KeyRound, Eye, EyeOff, Loader2, CheckCircle2, ArrowRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { forgotPassword, sendResetOtp } from "@/lib/api";
+import { forgotPassword, sendResetOtp, getAdminRequests, approveAdminRequest, rejectAdminRequest } from "@/lib/api";
 
 export const Route = createFileRoute("/_app/admin/settings")({
   head: () => ({ meta: [{ title: "Settings — WorkFlow HR" }] }),
@@ -30,6 +30,8 @@ function SettingsPage() {
   const [s, setS] = useState(store.getSettings());
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [requests, setRequests] = useState([]);
+  const [loadingRequests, setLoadingRequests] = useState(false);
 
   // Forgot password modal states
   const [forgotOpen, setForgotOpen] = useState(false);
@@ -92,12 +94,45 @@ function SettingsPage() {
     }
   }
 
+  async function loadRequests() {
+    setLoadingRequests(true);
+    try {
+      const data = await getAdminRequests();
+      setRequests(data);
+    } catch (e) {
+      toast.error("Failed to load admin requests");
+    } finally {
+      setLoadingRequests(false);
+    }
+  }
+
   useEffect(() => {
     const sync = () => setS(store.getSettings());
     sync();
+    loadRequests();
     window.addEventListener("wf:change", sync);
     return () => window.removeEventListener("wf:change", sync);
   }, []);
+
+  async function handleApprove(id) {
+    try {
+      await approveAdminRequest(id);
+      toast.success("Admin request approved");
+      loadRequests();
+    } catch (err) {
+      toast.error(err.message);
+    }
+  }
+
+  async function handleReject(id) {
+    try {
+      await rejectAdminRequest(id);
+      toast.success("Admin request rejected");
+      loadRequests();
+    } catch (err) {
+      toast.error(err.message);
+    }
+  }
 
   if (!user) return null;
 
@@ -268,6 +303,33 @@ function SettingsPage() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* ── Admin Requests Section ── */}
+      <div className="bg-card border border-border/40 rounded-2xl overflow-hidden card-shadow p-6 sm:p-8 space-y-6">
+        <h4 className="font-headline text-lg font-bold text-foreground border-b border-border/40 pb-3">
+          Pending Admin Approvals
+        </h4>
+        {loadingRequests ? (
+          <div className="flex justify-center p-4"><Loader2 className="size-6 animate-spin text-muted-foreground" /></div>
+        ) : requests.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No pending admin requests.</p>
+        ) : (
+          <div className="space-y-4">
+            {requests.map(req => (
+              <div key={req._id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-muted/30 border border-border/30">
+                <div>
+                  <p className="font-bold text-foreground">{req.name} <span className="text-muted-foreground text-xs font-normal">({req.employeeId})</span></p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{req.email || "No email"} · {req.phone}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={() => handleReject(req._id)} className="h-9 px-4 rounded-lg font-semibold border-border hover:bg-destructive/10 hover:text-destructive">Reject</Button>
+                  <Button size="sm" onClick={() => handleApprove(req._id)} className="h-9 px-4 rounded-lg font-semibold bg-primary text-primary-foreground hover:opacity-90">Approve</Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Footer */}

@@ -11,6 +11,7 @@ import leaveRoutes from "./routes/leaves.js";
 import compOffRoutes from "./routes/compOff.js";
 import reportRoutes from "./routes/reports.js";
 import settingsRoutes from "./routes/settings.js";
+import notificationRoutes from "./routes/notifications.js";
 import { ensureEarnedAccrualUpToDate, scheduleMonthlyAccrual } from "./utils/earnedAccrual.js";
 import { scheduleDailyAttendanceProcessing } from "./utils/dailyDutyScheduler.js";
 
@@ -39,6 +40,7 @@ app.use("/api/leaves", leaveRoutes);
 app.use("/api/comp-off", compOffRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/settings", settingsRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 app.use((err, _req, res, _next) => {
   if (err?.name === "ZodError") {
