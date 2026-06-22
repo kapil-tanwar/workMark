@@ -6,6 +6,7 @@ import { authRequired, adminOnly } from "../middleware/auth.js";
 import { canRequestLeave, computeLeaveBalance } from "../utils/leaveBalance.js";
 import { syncApprovedLeaveAttendance } from "../utils/syncLeaveAttendance.js";
 import { ensureEarnedAccrualUpToDate } from "../utils/earnedAccrual.js";
+import { notifyAdmins, notifyUser } from "../services/notification.js";
 
 const router = Router();
 router.use(authRequired);
@@ -72,6 +73,10 @@ router.post("/", async (req, res, next) => {
     );
     if (!check.ok) return next({ status: 400, message: check.message });
     const leave = await Leave.create({ ...data, user: req.user._id });
+    
+    // Notify admins
+    await notifyAdmins("New Leave Request", `${req.user.name} has requested ${data.type} from ${data.startDate} to ${data.endDate}.`, "leave", leave._id);
+
     res.status(201).json({ leave });
   } catch (e) {
     next(e);
@@ -98,8 +103,12 @@ router.patch("/:id/approve", adminOnly, async (req, res, next) => {
       req.params.id,
       { status: "Approved", decidedBy: req.user._id, decidedAt: new Date() },
       { new: true }
-    );
+    ).populate("user", "name");
     await syncApprovedLeaveAttendance(leave);
+    
+    // Notify user
+    await notifyUser(leave.user._id, "Leave Approved", `Your ${leave.type} from ${leave.startDate} to ${leave.endDate} has been approved.`, "leave", leave._id);
+
     res.json({ leave });
   } catch (e) {
     next(e);
@@ -112,8 +121,12 @@ router.patch("/:id/reject", adminOnly, async (req, res, next) => {
       req.params.id,
       { status: "Rejected", decidedBy: req.user._id, decidedAt: new Date() },
       { new: true }
-    );
+    ).populate("user", "name");
     if (!leave) return next({ status: 404, message: "Not found" });
+
+    // Notify user
+    await notifyUser(leave.user._id, "Leave Rejected", `Your ${leave.type} from ${leave.startDate} to ${leave.endDate} has been rejected.`, "leave", leave._id);
+
     res.json({ leave });
   } catch (e) {
     next(e);

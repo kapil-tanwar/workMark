@@ -5,6 +5,7 @@ import { z } from "zod";
 import User from "../models/User.js";
 import { authRequired } from "../middleware/auth.js";
 import { creditNewEmployeeEarnedLeave } from "../utils/earnedAccrual.js";
+import { notifyAdmins } from "../services/notification.js";
 
 const router = Router();
 
@@ -63,6 +64,14 @@ router.post("/signup", async (req, res, next) => {
       return next({ status: 409, message: "Employee ID already in use" });
     }
 
+    let approvalStatus = "approved";
+    if (data.role === "admin") {
+      const adminCount = await User.countDocuments({ role: "admin" });
+      if (adminCount > 0) {
+        approvalStatus = "pending";
+      }
+    }
+
     const user = await User.create({
       name: data.name,
       ...(email ? { email } : {}),
@@ -72,10 +81,17 @@ router.post("/signup", async (req, res, next) => {
       phone,
       department: data.department || "IT",
       designation: data.designation || (data.role === "admin" ? "Administrator" : "Team Member"),
+      approvalStatus,
     });
     if (user.role === "employee") await creditNewEmployeeEarnedLeave(user._id);
     const fresh = await User.findById(user._id);
-    res.status(201).json({ token: sign(fresh), user: fresh });
+
+    if (approvalStatus === "pending") {
+      await notifyAdmins("New Admin Request", `${data.name} has requested admin access.`, "admin");
+      res.status(201).json({ pending: true, message: "Admin request sent for approval" });
+    } else {
+      res.status(201).json({ token: sign(fresh), user: fresh });
+    }
   } catch (e) { next(e); }
 });
 
@@ -92,6 +108,12 @@ router.post("/login", async (req, res, next) => {
       ],
     });
     if (!user) return next({ status: 401, message: "Invalid credentials" });
+    if (user.approvalStatus === "pending") {
+      return next({ status: 403, message: "Account pending admin approval." });
+    }
+    if (user.approvalStatus === "rejected") {
+      return next({ status: 403, message: "Account request rejected." });
+    }
     if (!user.active) {
       return next({ status: 403, message: "Account disabled. Contact your administrator." });
     }

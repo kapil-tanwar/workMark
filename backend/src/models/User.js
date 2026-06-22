@@ -20,6 +20,7 @@ const UserSchema = new mongoose.Schema(
     designation: String,
     phone: { type: String, unique: true, sparse: true, index: true },
     active: { type: Boolean, default: true },
+    approvalStatus: { type: String, enum: ["approved", "pending", "rejected"], default: "approved" },
     leaveBalances: { type: LeaveBalancesSchema, default: () => ({}) },
   },
   { timestamps: true }

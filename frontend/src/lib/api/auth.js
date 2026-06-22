@@ -14,6 +14,9 @@ export async function signup(input) {
     method: "POST",
     body: JSON.stringify(input),
   });
+  if (data.pending) {
+    return { pending: true, message: data.message };
+  }
   setToken(data.token);
   return { user: normalizeUser(data.user), token: data.token };
 }

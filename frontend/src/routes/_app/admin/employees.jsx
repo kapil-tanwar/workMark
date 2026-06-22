@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { validateEmployeeId } from "@/lib/auth-helpers";
-import { store, saveEmployee, toggleEmployeeActive, deleteEmployee } from "@/lib/store";
+import { store, saveEmployee, toggleEmployeeActive, deleteEmployee, leaveBalance } from "@/lib/store";
 import { useWorkflowRefresh } from "@/hooks/use-workflow-refresh";
 import { PageHeader } from "@/components/wf-ui";
 
@@ -33,6 +33,7 @@ function FieldInput({ icon: Icon, type = "text", rightSlot, value, onChange, pla
       <Icon className={cn("absolute left-3.5 top-1/2 -translate-y-1/2 size-4 pointer-events-none z-10", focused ? "text-primary" : "text-muted-foreground")} />
       <input
         {...rest} type={type} value={value} onChange={onChange} placeholder={placeholder}
+        onWheel={type === "number" ? (e) => e.target.blur() : undefined}
         className={cn(
           "w-full h-11 pl-10 pr-4 rounded-xl text-sm border outline-none transition-all",
           "bg-transparent dark:bg-background text-foreground border-input placeholder:text-muted-foreground",
@@ -150,12 +151,12 @@ function EmployeeFormModal({ open, onOpenChange, edit, form, setForm, onSave, sa
               <div className="space-y-1.5">
                 <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Earned Leaves</label>
                 <FieldInput icon={CalendarCheck} type="number" placeholder="0" value={form.earnedLeaves}
-                  onChange={(e) => setForm({ ...form, earnedLeaves: parseFloat(e.target.value) || 0 })} />
+                  onChange={(e) => setForm({ ...form, earnedLeaves: e.target.value })} />
               </div>
               <div className="space-y-1.5">
                 <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Comp-off Leaves</label>
                 <FieldInput icon={History} type="number" placeholder="0" value={form.compOffLeaves}
-                  onChange={(e) => setForm({ ...form, compOffLeaves: parseFloat(e.target.value) || 0 })} />
+                  onChange={(e) => setForm({ ...form, compOffLeaves: e.target.value })} />
               </div>
             </div>
           </div>
@@ -233,6 +234,7 @@ function EmployeesPage() {
 
   function openEdit(u) {
     setEdit(u);
+    const bal = leaveBalance(u.id);
     setForm({
       name: u.name,
       email: u.email || "",
@@ -240,8 +242,8 @@ function EmployeesPage() {
       department: u.department,
       designation: u.designation,
       phone: u.phone,
-      earnedLeaves: u.leaveBalances?.earnedTotal ?? 0,
-      compOffLeaves: u.leaveBalances?.compOffTotal ?? 0,
+      earnedLeaves: bal.earned.remaining,
+      compOffLeaves: bal.compOff.remaining,
       password: "",
     });
     setOpen(true);
@@ -260,9 +262,18 @@ function EmployeesPage() {
       toast.error("Temporary password must be at least 6 characters");
       return;
     }
+
+    let earnedToSend = Number(form.earnedLeaves) || 0;
+    let compOffToSend = Number(form.compOffLeaves) || 0;
+    if (edit) {
+      const bal = leaveBalance(edit.id);
+      earnedToSend = (Number(form.earnedLeaves) || 0) + bal.earned.used;
+      compOffToSend = (Number(form.compOffLeaves) || 0) + bal.compOff.used;
+    }
+
     setSaving(true);
     try {
-      await saveEmployee(edit, { ...form, employeeId }, tempPassword);
+      await saveEmployee(edit, { ...form, employeeId, earnedLeaves: earnedToSend, compOffLeaves: compOffToSend }, tempPassword);
       toast.success(edit ? "Employee updated" : "Employee added");
       setOpen(false);
     } catch (err) {
