@@ -61,6 +61,15 @@ export const Route = createRootRouteWithContext()({
                 rel: "stylesheet",
                 href: appCss,
             },
+          {
+            rel: "icon",
+            type: "image/svg+xml",
+            href: "/favicon.svg",
+          },
+          {
+            rel: "apple-touch-icon",
+            href: "/favicon.svg",
+          },
             {
                 rel: "stylesheet",
                 href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap",
