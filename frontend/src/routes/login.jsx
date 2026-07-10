@@ -62,11 +62,16 @@ function LoginPage() {
         {/* Content */}
         <div className="relative z-10 space-y-8">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-3 hover:opacity-90 transition-opacity w-fit">
+          <Link
+            to="/"
+            className="flex items-center gap-3 hover:opacity-90 transition-opacity w-fit"
+          >
             <div className="size-12 rounded-xl flex items-center justify-center font-headline font-black text-xl shrink-0 bg-background text-primary">
               <Briefcase className="size-6" />
             </div>
-            <span className="font-headline text-2xl font-bold text-primary-foreground">WorkFlow HR</span>
+            <span className="font-headline text-2xl font-bold text-primary-foreground">
+              WorkFlow HR
+            </span>
           </Link>
 
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest bg-background/10 text-primary-foreground/80">
@@ -79,7 +84,8 @@ function LoginPage() {
           </h1>
 
           <p className="text-base leading-relaxed text-primary-foreground/80">
-            Real-time tracking, automated reporting, and intuitive request flows designed for modern teams.
+            Real-time tracking, automated reporting, and intuitive request flows designed for modern
+            teams.
           </p>
 
           {/* Stats */}
@@ -88,8 +94,13 @@ function LoginPage() {
               { label: "Active Nodes", value: "12,482", color: "text-tertiary" },
               { label: "Uptime", value: "99.99%", color: "text-primary-foreground" },
             ].map(({ label, value, color }) => (
-              <div key={label} className="p-5 rounded-xl border border-primary-foreground/20 bg-background/10 backdrop-blur-md">
-                <p className={`text-[10px] font-bold uppercase tracking-widest mb-2 ${color}`}>{label}</p>
+              <div
+                key={label}
+                className="p-5 rounded-xl border border-primary-foreground/20 bg-background/10 backdrop-blur-md"
+              >
+                <p className={`text-[10px] font-bold uppercase tracking-widest mb-2 ${color}`}>
+                  {label}
+                </p>
                 <p className="font-headline text-2xl font-bold text-primary-foreground">{value}</p>
               </div>
             ))}
@@ -123,7 +134,9 @@ function LoginPage() {
         <div className="relative z-10 w-full max-w-[420px] space-y-7">
           <div>
             <h2 className="font-headline text-3xl font-bold mb-1.5 text-foreground">Sign in</h2>
-            <p className="text-sm text-muted-foreground">Enter your credentials to access the portal</p>
+            <p className="text-sm text-muted-foreground">
+              Enter your credentials to access the portal
+            </p>
           </div>
 
           <form onSubmit={submit} className="space-y-5">
@@ -134,11 +147,19 @@ function LoginPage() {
               </label>
               <div className="relative">
                 <User
-                  className={idFocused ? "text-primary absolute left-4 top-1/2 -translate-y-1/2 size-4 pointer-events-none transition-colors" : "text-muted-foreground absolute left-4 top-1/2 -translate-y-1/2 size-4 pointer-events-none transition-colors"}
+                  className={
+                    idFocused
+                      ? "text-primary absolute left-4 top-1/2 -translate-y-1/2 size-4 pointer-events-none transition-colors"
+                      : "text-muted-foreground absolute left-4 top-1/2 -translate-y-1/2 size-4 pointer-events-none transition-colors"
+                  }
                 />
                 <input
-                  id="identifier" type="text" required autoComplete="username"
-                  placeholder="admin@workflow.hr" value={identifier}
+                  id="identifier"
+                  type="text"
+                  required
+                  autoComplete="username"
+                  placeholder="admin@workflow.hr"
+                  value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
                   className="w-full h-12 pl-11 pr-4 rounded-xl text-sm border outline-none transition-all bg-background border-input text-foreground focus:border-primary focus:ring-1 focus:ring-primary shadow-sm"
                   onFocus={() => setIdFocused(true)}
@@ -150,25 +171,40 @@ function LoginPage() {
             {/* Password */}
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Password</label>
-                <Link to="/forgot-password" className="text-xs font-semibold hover:underline underline-offset-2 text-primary">
+                <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                  Password
+                </label>
+                <Link
+                  to="/forgot-password"
+                  className="text-xs font-semibold hover:underline underline-offset-2 text-primary"
+                >
                   Forgot password?
                 </Link>
               </div>
               <div className="relative">
                 <Lock
-                  className={pwFocused ? "text-primary absolute left-4 top-1/2 -translate-y-1/2 size-4 pointer-events-none" : "text-muted-foreground absolute left-4 top-1/2 -translate-y-1/2 size-4 pointer-events-none"}
+                  className={
+                    pwFocused
+                      ? "text-primary absolute left-4 top-1/2 -translate-y-1/2 size-4 pointer-events-none"
+                      : "text-muted-foreground absolute left-4 top-1/2 -translate-y-1/2 size-4 pointer-events-none"
+                  }
                 />
                 <input
-                  id="password" type={showPassword ? "text" : "password"} required
-                  placeholder="••••••••" value={password}
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  required
+                  placeholder="••••••••"
+                  value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full h-12 pl-11 pr-11 rounded-xl text-sm border outline-none transition-all bg-background border-input text-foreground focus:border-primary focus:ring-1 focus:ring-primary shadow-sm"
                   onFocus={() => setPwFocused(true)}
                   onBlur={() => setPwFocused(false)}
                 />
-                <button type="button" onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 hover:opacity-80 transition-opacity text-muted-foreground">
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 hover:opacity-80 transition-opacity text-muted-foreground"
+                >
                   {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                 </button>
               </div>
@@ -181,12 +217,19 @@ function LoginPage() {
             </label> */}
 
             {/* Submit */}
-            <button type="submit" disabled={loading}
-              className="w-full h-12 font-bold text-base rounded-xl flex items-center justify-center gap-2.5 transition-all active:scale-[0.98] hover:opacity-90 disabled:opacity-60 bg-primary text-primary-foreground">
-              {loading
-                ? <Loader2 className="size-4 animate-spin" />
-                : <><span>Sign in to Dashboard</span><ArrowRight className="size-4" /></>
-              }
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full h-12 font-bold text-base rounded-xl flex items-center justify-center gap-2.5 transition-all active:scale-[0.98] hover:opacity-90 disabled:opacity-60 bg-primary text-primary-foreground"
+            >
+              {loading ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <>
+                  <span>Sign in to Dashboard</span>
+                  <ArrowRight className="size-4" />
+                </>
+              )}
             </button>
           </form>
 
@@ -196,10 +239,12 @@ function LoginPage() {
               Need help?{" "}
               <span className="font-semibold cursor-pointer hover:underline text-primary">Contact HR</span>
             </span> */}
-            <span className="text-muted-foreground">
+            {/* <span className="text-muted-foreground">
               New here?{" "}
-              <Link to="/signup" className="font-bold hover:underline text-primary">Create account</Link>
-            </span>
+              <Link to="/signup" className="font-bold hover:underline text-primary">
+                Create account
+              </Link>
+            </span> */}
           </div>
         </div>
       </div>

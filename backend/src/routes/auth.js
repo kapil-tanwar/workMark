@@ -24,7 +24,10 @@ function getAttemptKey(req, scope) {
 function checkAttempts(req, scope, limit) {
   const key = getAttemptKey(req, scope);
   const now = Date.now();
-  const bucket = attemptBuckets.get(key) || { count: 0, resetAt: now + ATTEMPT_LIMIT_WINDOW_MS };
+  const bucket = attemptBuckets.get(key) || {
+    count: 0,
+    resetAt: now + ATTEMPT_LIMIT_WINDOW_MS,
+  };
   if (bucket.resetAt <= now) {
     bucket.count = 0;
     bucket.resetAt = now + ATTEMPT_LIMIT_WINDOW_MS;
@@ -43,17 +46,25 @@ function clearAttempts(req, scope) {
 }
 
 function sign(user) {
-  return jwt.sign({ sub: user.id, role: user.role, tv: user.tokenVersion ?? 0 }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRES_IN || "7d",
-  });
+  return jwt.sign(
+    { sub: user.id, role: user.role, tv: user.tokenVersion ?? 0 },
+    process.env.JWT_SECRET,
+    {
+      expiresIn: process.env.JWT_EXPIRES_IN || "7d",
+    },
+  );
 }
 
 function normalizeEmployeeId(id) {
-  return String(id || "").trim().toUpperCase();
+  return String(id || "")
+    .trim()
+    .toUpperCase();
 }
 
 function normalizeEmail(email) {
-  const trimmed = String(email || "").trim().toLowerCase();
+  const trimmed = String(email || "")
+    .trim()
+    .toLowerCase();
   return trimmed || undefined;
 }
 
@@ -71,7 +82,11 @@ const signupSchema = z
   .superRefine((data, ctx) => {
     const norm = normalizeEmployeeId(data.employeeId);
     if (!norm || norm.length < 2) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Employee ID is required", path: ["employeeId"] });
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Employee ID is required",
+        path: ["employeeId"],
+      });
     }
   });
 
@@ -81,7 +96,8 @@ router.post("/signup", async (req, res, next) => {
     const email = normalizeEmail(data.email);
     if (email) {
       const existing = await User.findOne({ email });
-      if (existing) return next({ status: 409, message: "Email already registered" });
+      if (existing)
+        return next({ status: 409, message: "Email already registered" });
     }
 
     const phone = data.phone.trim();
@@ -91,7 +107,10 @@ router.post("/signup", async (req, res, next) => {
 
     const employeeId = normalizeEmployeeId(data.employeeId);
     if (employeeId.length < 2 || employeeId.length > 32) {
-      return next({ status: 400, message: "Employee ID must be 2–32 characters" });
+      return next({
+        status: 400,
+        message: "Employee ID must be 2–32 characters",
+      });
     }
     if (await User.findOne({ employeeId })) {
       return next({ status: 409, message: "Employee ID already in use" });
@@ -113,19 +132,29 @@ router.post("/signup", async (req, res, next) => {
       employeeId,
       phone,
       department: data.department || "IT",
-      designation: data.designation || (data.role === "admin" ? "Administrator" : "Team Member"),
+      designation:
+        data.designation ||
+        (data.role === "admin" ? "Administrator" : "Team Member"),
       approvalStatus,
     });
     if (user.role === "employee") await creditNewEmployeeEarnedLeave(user._id);
     const fresh = await User.findById(user._id);
 
     if (approvalStatus === "pending") {
-      await notifyAdmins("New Admin Request", `${data.name} has requested admin access.`, "admin");
-      res.status(201).json({ pending: true, message: "Admin request sent for approval" });
+      await notifyAdmins(
+        "New Admin Request",
+        `${data.name} has requested admin access.`,
+        "admin",
+      );
+      res
+        .status(201)
+        .json({ pending: true, message: "Admin request sent for approval" });
     } else {
       res.status(201).json({ token: sign(fresh), user: fresh });
     }
-  } catch (e) { next(e); }
+  } catch (e) {
+    next(e);
+  }
 });
 
 router.post("/login", async (req, res, next) => {
@@ -133,7 +162,10 @@ router.post("/login", async (req, res, next) => {
     const attempt = checkAttempts(req, "login", 5);
     if (attempt.blocked) {
       res.set("Retry-After", String(attempt.retryAfter));
-      return next({ status: 429, message: "Too many login attempts. Try again later." });
+      return next({
+        status: 429,
+        message: "Too many login attempts. Try again later.",
+      });
     }
     const { email, password } = z
       .object({ email: z.string().min(1), password: z.string().min(1) })
@@ -141,7 +173,9 @@ router.post("/login", async (req, res, next) => {
     const identifier = email.trim();
     const user = await User.findOne({
       $or: [
-        ...(identifier.includes("@") ? [{ email: identifier.toLowerCase() }] : []),
+        ...(identifier.includes("@")
+          ? [{ email: identifier.toLowerCase() }]
+          : []),
         { employeeId: normalizeEmployeeId(identifier) },
       ],
     });
@@ -153,13 +187,18 @@ router.post("/login", async (req, res, next) => {
       return next({ status: 403, message: "Account request rejected." });
     }
     if (!user.active) {
-      return next({ status: 403, message: "Account disabled. Contact your administrator." });
+      return next({
+        status: 403,
+        message: "Account disabled. Contact your administrator.",
+      });
     }
     const ok = await bcrypt.compare(password, user.passwordHash);
     if (!ok) return next({ status: 401, message: "Invalid credentials" });
     clearAttempts(req, "login");
     res.json({ token: sign(user), user });
-  } catch (e) { next(e); }
+  } catch (e) {
+    next(e);
+  }
 });
 
 router.get("/me", authRequired, (req, res) => res.json({ user: req.user }));
@@ -178,14 +217,17 @@ router.patch("/profile", authRequired, async (req, res, next) => {
     const patch = {};
 
     if (data.name !== undefined) patch.name = data.name.trim();
-    if (data.department !== undefined) patch.department = data.department.trim();
-    if (data.designation !== undefined) patch.designation = data.designation.trim();
+    if (data.department !== undefined)
+      patch.department = data.department.trim();
+    if (data.designation !== undefined)
+      patch.designation = data.designation.trim();
 
     if (data.email !== undefined) {
       const email = normalizeEmail(data.email);
       if (email) {
         const taken = await User.findOne({ email, _id: { $ne: req.user._id } });
-        if (taken) return next({ status: 409, message: "Email already in use" });
+        if (taken)
+          return next({ status: 409, message: "Email already in use" });
         patch.email = email;
       }
     }
@@ -193,11 +235,14 @@ router.patch("/profile", authRequired, async (req, res, next) => {
     if (data.phone !== undefined) {
       const phone = data.phone.trim();
       const taken = await User.findOne({ phone, _id: { $ne: req.user._id } });
-      if (taken) return next({ status: 409, message: "Phone number already in use" });
+      if (taken)
+        return next({ status: 409, message: "Phone number already in use" });
       patch.phone = phone;
     }
 
-    const user = await User.findByIdAndUpdate(req.user._id, patch, { new: true });
+    const user = await User.findByIdAndUpdate(req.user._id, patch, {
+      new: true,
+    });
     res.json({ user });
   } catch (e) {
     next(e);
@@ -209,7 +254,10 @@ router.post("/forgot-password", async (req, res, next) => {
     const attempt = checkAttempts(req, "forgot-password", 6);
     if (attempt.blocked) {
       res.set("Retry-After", String(attempt.retryAfter));
-      return next({ status: 429, message: "Too many reset attempts. Try again later." });
+      return next({
+        status: 429,
+        message: "Too many reset attempts. Try again later.",
+      });
     }
     const { identifier, phone, otp, newPassword } = z
       .object({
@@ -232,10 +280,16 @@ router.post("/forgot-password", async (req, res, next) => {
 
     const user = await User.findOne(query);
     if (!user || !user.is2faEnabled || !user.totpSecret) {
-      return next({ status: 401, message: "Invalid details or Authenticator code" });
+      return next({
+        status: 401,
+        message: "Invalid details or Authenticator code",
+      });
     }
 
-    const isValid = authenticator.verify({ token: otp, secret: user.totpSecret });
+    const isValid = authenticator.verify({
+      token: otp,
+      secret: user.totpSecret,
+    });
     if (!isValid) {
       return next({ status: 401, message: "Invalid Authenticator Code" });
     }
@@ -254,9 +308,13 @@ router.post("/forgot-password", async (req, res, next) => {
 router.post("/2fa/generate", authRequired, async (req, res, next) => {
   try {
     const secret = authenticator.generateSecret();
-    const otpauth = authenticator.keyuri(req.user.email || req.user.employeeId, "WorkFlow HR", secret);
+    const otpauth = authenticator.keyuri(
+      req.user.email || req.user.employeeId,
+      "WorkFlow HR",
+      secret,
+    );
     const qrCodeDataUrl = await qrcode.toDataURL(otpauth);
-    
+
     // Keep a pending secret until the code is verified successfully.
     req.user.pendingTotpSecret = secret;
     await req.user.save();
@@ -272,25 +330,31 @@ router.post("/2fa/verify", authRequired, async (req, res, next) => {
     const attempt = checkAttempts(req, "2fa-verify", 6);
     if (attempt.blocked) {
       res.set("Retry-After", String(attempt.retryAfter));
-      return next({ status: 429, message: "Too many verification attempts. Try again later." });
+      return next({
+        status: 429,
+        message: "Too many verification attempts. Try again later.",
+      });
     }
     const otp = String(req.body?.otp || "").trim();
     const secret = req.user.pendingTotpSecret || req.user.totpSecret;
     if (!secret) {
-      return next({ status: 400, message: "No 2FA secret found to verify. Generate one first." });
+      return next({
+        status: 400,
+        message: "No 2FA secret found to verify. Generate one first.",
+      });
     }
-    
+
     const isValid = authenticator.verify({ token: otp, secret });
     if (!isValid) {
       return next({ status: 401, message: "Invalid Authenticator Code" });
     }
-    
+
     req.user.totpSecret = secret;
     req.user.pendingTotpSecret = undefined;
     req.user.is2faEnabled = true;
     await req.user.save();
     clearAttempts(req, "2fa-verify");
-    
+
     res.json({ message: "2FA successfully enabled.", user: req.user });
   } catch (e) {
     next(e);
