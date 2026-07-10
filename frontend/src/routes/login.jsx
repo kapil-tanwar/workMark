@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate, redirect } from "@tanstack/react-ro
 import { useState } from "react";
 import { ArrowRight, Loader2, Eye, EyeOff, User, Lock, Briefcase } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
+import { getToken } from "@/lib/api";
 import { toast } from "sonner";
 import { getSavedUser } from "@/lib/auth-helpers";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -9,7 +10,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 export const Route = createFileRoute("/login")({
   beforeLoad: () => {
     if (typeof window === "undefined") return;
-    const token = localStorage.getItem("wf_token");
+    const token = getToken();
     const user = getSavedUser();
     if (token && user) throw redirect({ to: user.role === "admin" ? "/admin" : "/dashboard" });
   },
@@ -52,8 +53,8 @@ function LoginPage() {
       <div className="hidden md:flex md:w-[52%] relative overflow-hidden flex-col justify-between p-12 lg:p-16 bg-primary text-primary-foreground">
         {/* Layered background */}
         <div className="absolute inset-0 z-0 pointer-events-none">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/80 via-primary to-primary/40" />
-          <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,var(--color-primary-foreground)_1px,transparent_1px)] [background-size:24px_24px]" />
+          <div className="absolute inset-0 bg-linear-to-br from-primary/80 via-primary to-primary/40" />
+          <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,var(--color-primary-foreground)_1px,transparent_1px)] bg-size-[24px_24px]" />
           <div className="absolute top-1/4 right-1/4 w-72 h-72 rounded-full blur-[120px] bg-background/20" />
           <div className="absolute bottom-1/3 left-1/4 w-56 h-56 rounded-full blur-[100px] bg-tertiary/20" />
         </div>
@@ -117,7 +118,7 @@ function LoginPage() {
         </div>
 
         {/* Dot pattern */}
-        <div className="absolute inset-0 opacity-[0.025] pointer-events-none bg-[radial-gradient(var(--color-primary)_1px,transparent_1px)] [background-size:24px_24px]" />
+        <div className="absolute inset-0 opacity-[0.025] pointer-events-none bg-[radial-gradient(var(--color-primary)_1px,transparent_1px)] bg-size-[24px_24px]" />
 
         <div className="relative z-10 w-full max-w-[420px] space-y-7">
           <div>

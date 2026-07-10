@@ -22,6 +22,10 @@ const UserSchema = new mongoose.Schema(
     active: { type: Boolean, default: true },
     approvalStatus: { type: String, enum: ["approved", "pending", "rejected"], default: "approved" },
     leaveBalances: { type: LeaveBalancesSchema, default: () => ({}) },
+    pendingTotpSecret: { type: String },
+    totpSecret: { type: String },
+    tokenVersion: { type: Number, default: 0 },
+    is2faEnabled: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
@@ -30,6 +34,8 @@ UserSchema.methods.toJSON = function () {
   const o = this.toObject();
   delete o.passwordHash;
   delete o.__v;
+  delete o.pendingTotpSecret;
+  delete o.totpSecret;
   return o;
 };
 

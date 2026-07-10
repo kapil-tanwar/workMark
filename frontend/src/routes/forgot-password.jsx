@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { BadgeCheck, Phone, Lock, Eye, EyeOff, ArrowLeft, CheckCircle2, Loader2, ArrowRight, Briefcase } from "lucide-react";
-import { forgotPassword, sendResetOtp } from "@/lib/api";
+import { forgotPassword } from "@/lib/api";
 import { toast } from "sonner";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAuth } from "@/lib/auth-context";
@@ -21,8 +21,6 @@ function ForgotPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState(1);
-  const [simulatedOtp, setSimulatedOtp] = useState("");
 
   const [idFocus, setIdFocus] = useState(false);
   const [phoneFocus, setPhoneFocus] = useState(false);
@@ -32,21 +30,6 @@ function ForgotPage() {
   const backLink = user ? (user.role === 'admin' ? '/admin/settings' : '/profile') : '/login';
   const backText = user ? "Back to settings" : "Back to login";
 
-  async function handleSendOtp(e) {
-    e.preventDefault();
-    if (!identifier || !phone) { toast.error("Please enter email/ID and phone number"); return; }
-    setLoading(true);
-    try {
-      const res = await sendResetOtp({ identifier, phone });
-      if (res.otp) setSimulatedOtp(res.otp);
-      setStep(2);
-      toast.success("OTP sent to WhatsApp/Mobile successfully!");
-    } catch (err) {
-      toast.error(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }
 
   async function handleResetPassword(e) {
     e.preventDefault();
@@ -104,110 +87,78 @@ function ForgotPage() {
             <>
               <div className="text-center mb-8">
                 <h1 className="font-headline text-xl font-bold mb-2 text-foreground">
-                  {step === 1 ? "Reset password" : "Enter OTP & new password"}
+                  Reset password
                 </h1>
                 <p className="text-sm text-muted-foreground">
-                  {step === 1
-                    ? "Enter your details to receive a secure verification code."
-                    : "Check your phone/WhatsApp for the 6-digit OTP."}
+                  Enter your details and your Google Authenticator code to reset your password.
                 </p>
               </div>
 
-              {step === 1 ? (
-                <form onSubmit={handleSendOtp} className="space-y-5">
-                  <div className="space-y-2">
-                    <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
-                      Email or Employee ID
-                    </label>
-                    <div className="relative">
-                      <BadgeCheck className={`absolute left-4 top-1/2 -translate-y-1/2 size-[18px] pointer-events-none transition-colors ${idFocus ? 'text-primary' : 'text-muted-foreground'}`} />
-                      <input type="text" required placeholder=" Email or EMP ID"
-                        value={identifier} onChange={(e) => setIdentifier(e.target.value)}
-                        className="w-full h-[52px] pl-12 pr-4 rounded-xl text-sm border outline-none transition-all bg-background border-input text-foreground focus:border-primary focus:ring-1 focus:ring-primary shadow-sm"
-                        onFocus={() => setIdFocus(true)} onBlur={() => setIdFocus(false)}
-                      />
-                    </div>
+              <form onSubmit={handleResetPassword} className="space-y-5">
+                <div className="space-y-2">
+                  <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+                    Email or Employee ID
+                  </label>
+                  <div className="relative">
+                    <BadgeCheck className={`absolute left-4 top-1/2 -translate-y-1/2 size-[18px] pointer-events-none transition-colors ${idFocus ? 'text-primary' : 'text-muted-foreground'}`} />
+                    <input type="text" required placeholder=" Email or EMP ID"
+                      value={identifier} onChange={(e) => setIdentifier(e.target.value)}
+                      className="w-full h-[52px] pl-12 pr-4 rounded-xl text-sm border outline-none transition-all bg-background border-input text-foreground focus:border-primary focus:ring-1 focus:ring-primary shadow-sm"
+                      onFocus={() => setIdFocus(true)} onBlur={() => setIdFocus(false)}
+                    />
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
-                      Phone Number
-                    </label>
-                    <div className="relative">
-                      <Phone className={`absolute left-4 top-1/2 -translate-y-1/2 size-[18px] pointer-events-none transition-colors ${phoneFocus ? 'text-primary' : 'text-muted-foreground'}`} />
-                      <input type="tel" required placeholder="+919876543210"
-                        value={phone} onChange={(e) => setPhone(e.target.value)}
-                        className="w-full h-[52px] pl-12 pr-4 rounded-xl text-sm border outline-none transition-all bg-background border-input text-foreground focus:border-primary focus:ring-1 focus:ring-primary shadow-sm"
-                        onFocus={() => setPhoneFocus(true)} onBlur={() => setPhoneFocus(false)}
-                      />
-                    </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+                    Phone Number
+                  </label>
+                  <div className="relative">
+                    <Phone className={`absolute left-4 top-1/2 -translate-y-1/2 size-[18px] pointer-events-none transition-colors ${phoneFocus ? 'text-primary' : 'text-muted-foreground'}`} />
+                    <input type="tel" required placeholder="+919876543210"
+                      value={phone} onChange={(e) => setPhone(e.target.value)}
+                      className="w-full h-[52px] pl-12 pr-4 rounded-xl text-sm border outline-none transition-all bg-background border-input text-foreground focus:border-primary focus:ring-1 focus:ring-primary shadow-sm"
+                      onFocus={() => setPhoneFocus(true)} onBlur={() => setPhoneFocus(false)}
+                    />
                   </div>
-                  <button type="submit" disabled={loading}
-                    className="w-full h-[52px] rounded-xl font-bold text-sm flex items-center justify-center gap-2.5 transition-all active:scale-[0.98] hover:opacity-90 disabled:opacity-60 mt-2 bg-primary text-primary-foreground">
-                    {loading
-                      ? <Loader2 className="size-4 animate-spin" />
-                      : <><span>Send Verification OTP</span><ArrowRight className="size-4" /></>
-                    }
-                  </button>
-                </form>
-              ) : (
-                <form onSubmit={handleResetPassword} className="space-y-5">
-                  {/* Confirmation block */}
-                  <div className="px-4 py-3 rounded-xl border bg-muted/30 border-border">
-                    <p className="text-[11px] font-bold uppercase tracking-widest mb-1 text-muted-foreground">Sending OTP to</p>
-                    <p className="text-sm font-semibold truncate text-foreground">{identifier}</p>
-                    <p className="text-xs text-muted-foreground">{phone}</p>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+                    Google Auth Code
+                  </label>
+                  <div className="relative">
+                    <Lock className={`absolute left-4 top-1/2 -translate-y-1/2 size-[18px] pointer-events-none transition-colors ${otpFocus ? 'text-primary' : 'text-muted-foreground'}`} />
+                    <input type="text" required placeholder="6-digit code"
+                      value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                      className="w-full h-[52px] pl-12 pr-4 rounded-xl text-sm border outline-none transition-all bg-background border-input text-foreground focus:border-primary focus:ring-1 focus:ring-primary shadow-sm"
+                      onFocus={() => setOtpFocus(true)} onBlur={() => setOtpFocus(false)}
+                    />
                   </div>
+                </div>
 
-                  <div className="space-y-2">
-                    <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
-                      6-Digit OTP Code
-                    </label>
-                    <div className="relative">
-                      <Lock className={`absolute left-4 top-1/2 -translate-y-1/2 size-[18px] pointer-events-none transition-colors ${otpFocus ? 'text-primary' : 'text-muted-foreground'}`} />
-                      <input type="text" required placeholder="Enter 6-digit OTP"
-                        value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                        className="w-full h-[52px] pl-12 pr-4 rounded-xl text-sm border outline-none transition-all bg-background border-input text-foreground focus:border-primary focus:ring-1 focus:ring-primary shadow-sm"
-                        onFocus={() => setOtpFocus(true)} onBlur={() => setOtpFocus(false)}
-                      />
-                    </div>
+                <div className="space-y-2">
+                  <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+                    New Password
+                  </label>
+                  <div className="relative">
+                    <Lock className={`absolute left-4 top-1/2 -translate-y-1/2 size-[18px] pointer-events-none transition-colors ${pwFocus ? 'text-primary' : 'text-muted-foreground'}`} />
+                    <input type={showPassword ? "text" : "password"} required placeholder="At least 6 characters"
+                      value={newPassword} onChange={(e) => setNewPassword(e.target.value)}
+                      className="w-full h-[52px] pl-12 pr-11 rounded-xl text-sm border outline-none transition-all bg-background border-input text-foreground focus:border-primary focus:ring-1 focus:ring-primary shadow-sm"
+                      onFocus={() => setPwFocus(true)} onBlur={() => setPwFocus(false)}
+                    />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 hover:opacity-70 transition-opacity text-muted-foreground">
+                      {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                    </button>
                   </div>
+                </div>
 
-                  <div className="space-y-2">
-                    <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
-                      New Password
-                    </label>
-                    <div className="relative">
-                      <Lock className={`absolute left-4 top-1/2 -translate-y-1/2 size-[18px] pointer-events-none transition-colors ${pwFocus ? 'text-primary' : 'text-muted-foreground'}`} />
-                      <input type={showPassword ? "text" : "password"} required placeholder="At least 6 characters"
-                        value={newPassword} onChange={(e) => setNewPassword(e.target.value)}
-                        className="w-full h-[52px] pl-12 pr-11 rounded-xl text-sm border outline-none transition-all bg-background border-input text-foreground focus:border-primary focus:ring-1 focus:ring-primary shadow-sm"
-                        onFocus={() => setPwFocus(true)} onBlur={() => setPwFocus(false)}
-                      />
-                      <button type="button" onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 hover:opacity-70 transition-opacity text-muted-foreground">
-                        {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                      </button>
-                    </div>
-                  </div>
-
-                  {simulatedOtp && (
-                    <div className="px-4 py-3 rounded-xl border text-xs bg-primary/10 border-primary/20 text-primary">
-                      <p className="font-bold mb-1">OTP Sandbox (dev only)</p>
-                      <p>OTP: <span className="font-mono font-bold tracking-widest">{simulatedOtp}</span></p>
-                    </div>
-                  )}
-
-                  <button type="submit" disabled={loading}
-                    className="w-full h-[52px] rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] hover:opacity-90 disabled:opacity-60 bg-primary text-primary-foreground">
-                    {loading ? <Loader2 className="size-4 animate-spin" /> : "Verify & Reset Password"}
-                  </button>
-
-                  <button type="button" onClick={() => setStep(1)}
-                    className="w-full text-center text-xs hover:underline transition-colors text-muted-foreground">
-                    Change email or phone number
-                  </button>
-                </form>
-              )}
+                <button type="submit" disabled={loading}
+                  className="w-full h-[52px] rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] hover:opacity-90 disabled:opacity-60 bg-primary text-primary-foreground">
+                  {loading ? <Loader2 className="size-4 animate-spin" /> : "Verify & Reset Password"}
+                </button>
+              </form>
 
               <div className="mt-8 pt-6 border-t flex flex-col items-center gap-3 border-border/50">
                 <Link to={backLink} className="flex items-center gap-1.5 text-sm font-semibold hover:underline text-primary">

@@ -2,13 +2,13 @@ const BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
 const TOKEN_KEY = "wf_token";
 
 export function getToken() {
-  return typeof window !== "undefined" ? localStorage.getItem(TOKEN_KEY) : null;
+  return typeof window !== "undefined" ? sessionStorage.getItem(TOKEN_KEY) : null;
 }
 
 export function setToken(token) {
   if (typeof window === "undefined") return;
-  if (token) localStorage.setItem(TOKEN_KEY, token);
-  else localStorage.removeItem(TOKEN_KEY);
+  if (token) sessionStorage.setItem(TOKEN_KEY, token);
+  else sessionStorage.removeItem(TOKEN_KEY);
 }
 
 export function normalizeUser(u) {

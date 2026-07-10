@@ -16,11 +16,18 @@ import { ensureEarnedAccrualUpToDate, scheduleMonthlyAccrual } from "./utils/ear
 import { scheduleDailyAttendanceProcessing } from "./utils/dailyDutyScheduler.js";
 
 const app = express();
-const allowedOrigins = process.env.CORS_ORIGIN?.split(",").map(o => o.trim().replace(/\/$/, "")) || [];
+const allowedOrigins = (process.env.CORS_ORIGIN?.split(",").map(o => o.trim().replace(/\/$/, "")).filter(Boolean) || [
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+  "http://localhost:4173",
+  "http://127.0.0.1:4173",
+]);
 const corsOptions = {
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
-    if (allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
+    if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
     return callback(new Error("Not allowed by CORS"));
