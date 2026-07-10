@@ -6,13 +6,19 @@ const LeaveBalancesSchema = new mongoose.Schema(
     compOffTotal: { type: Number, default: 0 },
     lastEarnedAccrualAt: { type: Date },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const UserSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
-    email: { type: String, unique: true, sparse: true, lowercase: true, index: true },
+    email: {
+      type: String,
+      unique: true,
+      sparse: true,
+      lowercase: true,
+      index: true,
+    },
     passwordHash: { type: String, required: true },
     role: { type: String, enum: ["admin", "employee"], default: "employee" },
     employeeId: { type: String, unique: true, sparse: true },
@@ -20,14 +26,18 @@ const UserSchema = new mongoose.Schema(
     designation: String,
     phone: { type: String, unique: true, sparse: true, index: true },
     active: { type: Boolean, default: true },
-    approvalStatus: { type: String, enum: ["approved", "pending", "rejected"], default: "approved" },
+    approvalStatus: {
+      type: String,
+      enum: ["approved", "pending", "rejected"],
+      default: "approved",
+    },
     leaveBalances: { type: LeaveBalancesSchema, default: () => ({}) },
     pendingTotpSecret: { type: String },
     totpSecret: { type: String },
     tokenVersion: { type: Number, default: 0 },
     is2faEnabled: { type: Boolean, default: false },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 UserSchema.methods.toJSON = function () {
