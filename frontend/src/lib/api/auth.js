@@ -31,10 +31,14 @@ export async function updateProfile(body) {
   return normalizeUser(data.user);
 }
 
-export async function sendResetOtp({ identifier, phone }) {
-  return request("/api/auth/forgot-password/send-otp", {
+export async function generate2FA() {
+  return request("/api/auth/2fa/generate", { method: "POST" });
+}
+
+export async function verify2FA(otp) {
+  return request("/api/auth/2fa/verify", {
     method: "POST",
-    body: JSON.stringify({ identifier, phone }),
+    body: JSON.stringify({ otp }),
   });
 }
 

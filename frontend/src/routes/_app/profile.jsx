@@ -12,7 +12,7 @@ import { Mail, Phone, Building2, BadgeCheck, IdCard, KeyRound, Pencil, Eye, EyeO
 import { useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { forgotPassword, sendResetOtp } from "@/lib/api";
+import { forgotPassword, generate2FA, verify2FA } from "@/lib/api";
 
 export const Route = createFileRoute("/_app/profile")({
   head: () => ({ meta: [{ title: "Profile — WorkFlow HR" }] }),
@@ -35,34 +35,52 @@ function ProfilePage() {
   const [forgotOtp, setForgotOtp] = useState("");
   const [forgotNewPassword, setForgotNewPassword] = useState("");
   const [forgotShowPassword, setForgotShowPassword] = useState(false);
-  const [forgotSimulatedOtp, setForgotSimulatedOtp] = useState("");
   const [forgotLoading, setForgotLoading] = useState(false);
   const [forgotSuccess, setForgotSuccess] = useState(false);
+  
+  // 2FA Setup states
+  const [setup2faOpen, setSetup2faOpen] = useState(false);
+  const [qrCodeData, setQrCodeData] = useState("");
+  const [setup2faOtp, setSetup2faOtp] = useState("");
+  const [setup2faLoading, setSetup2faLoading] = useState(false);
 
   function openForgot() {
     setForgotIdentifier(user?.email || user?.employeeId || "");
     setForgotPhone(user?.phone || "");
     setForgotOtp("");
     setForgotNewPassword("");
-    setForgotStep(1);
-    setForgotSimulatedOtp("");
     setForgotSuccess(false);
     setForgotOpen(true);
   }
 
-  async function handleForgotSendOtp(e) {
-    e.preventDefault();
-    if (!forgotIdentifier || !forgotPhone) { toast.error("Please enter email/ID and phone number"); return; }
-    setForgotLoading(true);
+  async function openSetup2fa() {
+    setSetup2faLoading(true);
+    setSetup2faOpen(true);
     try {
-      const res = await sendResetOtp({ identifier: forgotIdentifier, phone: forgotPhone });
-      if (res.otp) setForgotSimulatedOtp(res.otp);
-      setForgotStep(2);
-      toast.success("OTP sent successfully!");
+      const res = await generate2FA();
+      setQrCodeData(res.qrCode);
+    } catch (err) {
+      toast.error(err.message);
+      setSetup2faOpen(false);
+    } finally {
+      setSetup2faLoading(false);
+    }
+  }
+
+  async function handleVerify2FA(e) {
+    e.preventDefault();
+    if (!setup2faOtp) return;
+    setSetup2faLoading(true);
+    try {
+      await verify2FA(setup2faOtp);
+      toast.success("2FA enabled successfully!");
+      setSetup2faOpen(false);
+      // The user object in context should ideally be refetched, but reloading works.
+      window.location.reload(); 
     } catch (err) {
       toast.error(err.message);
     } finally {
-      setForgotLoading(false);
+      setSetup2faLoading(false);
     }
   }
 
@@ -166,8 +184,16 @@ function ProfilePage() {
                 className="flex-1 md:flex-initial flex items-center justify-center gap-2 border border-border bg-card text-foreground px-4 sm:px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-muted active:scale-95 transition-all whitespace-nowrap"
               >
                 <KeyRound className="size-4" />
-                <span className="truncate">Forgot password?</span>
+                <span className="truncate">Reset password</span>
               </button>
+              {!user.is2faEnabled && (
+                <button
+                  onClick={openSetup2fa}
+                  className="flex-1 md:flex-initial flex items-center justify-center gap-2 border border-border bg-card text-foreground px-4 sm:px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-muted active:scale-95 transition-all whitespace-nowrap"
+                >
+                  <span className="truncate text-success">Setup 2FA</span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -281,64 +307,72 @@ function ProfilePage() {
               </Button>
             </div>
           ) : (
-            /* Form Steps */
             <>
               <DialogHeader className="pb-3 border-b border-border">
                 <DialogTitle className="text-xl font-bold text-foreground">
-                  {forgotStep === 1 ? "Reset Password" : "Enter OTP & New Password"}
+                  Reset Password
                 </DialogTitle>
                 <DialogDescription className="text-sm text-muted-foreground mt-1">
-                  {forgotStep === 1
-                    ? "Verify your contact info to receive a secure code."
-                    : "Check your registered phone for the 6-digit OTP."}
+                  Enter your details and your Google Authenticator code to reset your password.
                 </DialogDescription>
               </DialogHeader>
 
-              {forgotStep === 1 ? (
-                <form onSubmit={handleForgotSendOtp} className="space-y-4 pt-4">
-                  <div className="space-y-2">
-                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Email or Employee ID</Label>
-                    <Input type="text" required placeholder="Email or EMP ID" value={forgotIdentifier} onChange={(e) => setForgotIdentifier(e.target.value)} className="h-12 bg-card border-border rounded-xl focus-visible:ring-primary shadow-sm" />
+              <form onSubmit={handleForgotResetPassword} className="space-y-4 pt-4">
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Email or Employee ID</Label>
+                  <Input type="text" required placeholder="Email or EMP ID" value={forgotIdentifier} onChange={(e) => setForgotIdentifier(e.target.value)} className="h-12 bg-card border-border rounded-xl focus-visible:ring-primary shadow-sm" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Phone Number</Label>
+                  <Input type="tel" required placeholder="+919876543210" value={forgotPhone} onChange={(e) => setForgotPhone(e.target.value)} className="h-12 bg-card border-border rounded-xl focus-visible:ring-primary shadow-sm" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Google Auth Code</Label>
+                  <Input type="text" required placeholder="6-digit code" value={forgotOtp} onChange={(e) => setForgotOtp(e.target.value.replace(/\D/g, "").slice(0, 6))} className="h-12 bg-card border-border rounded-xl focus-visible:ring-primary shadow-sm" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">New Password</Label>
+                  <div className="relative">
+                    <Input type={forgotShowPassword ? "text" : "password"} required placeholder="New Password" value={forgotNewPassword} onChange={(e) => setForgotNewPassword(e.target.value)} className="h-12 bg-card border-border rounded-xl focus-visible:ring-primary shadow-sm" />
+                    <button type="button" onClick={() => setForgotShowPassword(!forgotShowPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                      {forgotShowPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                    </button>
                   </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Phone Number</Label>
-                    <Input type="tel" required placeholder="+919876543210" value={forgotPhone} onChange={(e) => setForgotPhone(e.target.value)} className="h-12 bg-card border-border rounded-xl focus-visible:ring-primary shadow-sm" />
-                  </div>
-                  <Button type="submit" disabled={forgotLoading} className="w-full h-12 bg-primary text-primary-foreground rounded-xl font-bold flex items-center justify-center gap-2 mt-2 hover:opacity-90">
-                    {forgotLoading ? <Loader2 className="size-4 animate-spin" /> : <><span>Send OTP</span><ArrowRight className="size-4" /></>}
+                </div>
+                <div className="flex gap-2">
+                  <Button type="submit" disabled={forgotLoading} className="w-full h-12 bg-primary text-primary-foreground rounded-xl font-bold">
+                    {forgotLoading ? <Loader2 className="size-4 animate-spin" /> : "Reset Password"}
                   </Button>
-                </form>
-              ) : (
-                <form onSubmit={handleForgotResetPassword} className="space-y-4 pt-4">
-                  <div className="space-y-2">
-                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">6-Digit OTP</Label>
-                    <Input type="text" required placeholder="Enter OTP" value={forgotOtp} onChange={(e) => setForgotOtp(e.target.value.replace(/\D/g, "").slice(0, 6))} className="h-12 bg-card border-border rounded-xl focus-visible:ring-primary shadow-sm" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">New Password</Label>
-                    <div className="relative">
-                      <Input type={forgotShowPassword ? "text" : "password"} required placeholder="New Password" value={forgotNewPassword} onChange={(e) => setForgotNewPassword(e.target.value)} className="h-12 bg-card border-border rounded-xl focus-visible:ring-primary shadow-sm" />
-                      <button type="button" onClick={() => setForgotShowPassword(!forgotShowPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                        {forgotShowPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                      </button>
-                    </div>
-                  </div>
-                  {forgotSimulatedOtp && (
-                    <div className="p-3 bg-primary/10 border border-primary/20 text-primary rounded-xl text-xs">
-                      <p className="font-bold mb-0.5">OTP Sandbox (Dev Mode):</p>
-                      <p className="font-mono tracking-widest font-bold">{forgotSimulatedOtp}</p>
-                    </div>
-                  )}
-                  <div className="flex gap-2">
-                    <Button type="button" variant="outline" onClick={() => setForgotStep(1)} className="flex-1 h-12 rounded-xl font-semibold border-border">Back</Button>
-                    <Button type="submit" disabled={forgotLoading} className="flex-1 h-12 bg-primary text-primary-foreground rounded-xl font-bold">
-                      {forgotLoading ? <Loader2 className="size-4 animate-spin" /> : "Reset"}
-                    </Button>
-                  </div>
-                </form>
-              )}
+                </div>
+              </form>
             </>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Setup 2FA Dialog ── */}
+      <Dialog open={setup2faOpen} onOpenChange={setSetup2faOpen}>
+        <DialogContent className="sm:max-w-sm p-6 bg-background border-border rounded-2xl shadow-2xl flex flex-col">
+          <DialogHeader className="pb-3 border-b border-border">
+            <DialogTitle className="text-xl font-bold text-foreground">Setup Google Authenticator</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleVerify2FA} className="space-y-4 pt-4 text-center">
+            {setup2faLoading && !qrCodeData ? (
+              <div className="flex justify-center p-6"><Loader2 className="size-8 animate-spin text-primary" /></div>
+            ) : (
+              <>
+                <p className="text-sm text-muted-foreground">Scan this QR code with Google Authenticator, then enter the 6-digit code below to verify.</p>
+                {qrCodeData && <img src={qrCodeData} alt="2FA QR Code" className="mx-auto rounded-xl border p-2 bg-white" />}
+                <div className="space-y-2 text-left">
+                  <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">6-Digit Code</Label>
+                  <Input type="text" required placeholder="123456" value={setup2faOtp} onChange={(e) => setSetup2faOtp(e.target.value.replace(/\D/g, "").slice(0, 6))} className="h-12 bg-card border-border rounded-xl focus-visible:ring-primary shadow-sm text-center tracking-widest font-mono text-lg" />
+                </div>
+                <Button type="submit" disabled={setup2faLoading || !setup2faOtp} className="w-full h-12 bg-primary text-primary-foreground rounded-xl font-bold">
+                  {setup2faLoading ? <Loader2 className="size-4 animate-spin" /> : "Verify & Enable"}
+                </Button>
+              </>
+            )}
+          </form>
         </DialogContent>
       </Dialog>
     </div>

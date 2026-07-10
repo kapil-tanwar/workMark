@@ -2,6 +2,11 @@ import { Router } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { z } from "zod";
+import { authenticator } from "otplib";
+import qrcode from "qrcode";
+
+// Allow a 60-second window before and after the current token to prevent "invalid authentication code" on slow entry
+authenticator.options = { window: [2, 2] };
 import User from "../models/User.js";
 import { authRequired } from "../middleware/auth.js";
 import { creditNewEmployeeEarnedLeave } from "../utils/earnedAccrual.js";
@@ -9,8 +14,36 @@ import { notifyAdmins } from "../services/notification.js";
 
 const router = Router();
 
+const attemptBuckets = new Map();
+const ATTEMPT_LIMIT_WINDOW_MS = 15 * 60 * 1000;
+
+function getAttemptKey(req, scope) {
+  return `${scope}:${req.ip || "unknown"}`;
+}
+
+function checkAttempts(req, scope, limit) {
+  const key = getAttemptKey(req, scope);
+  const now = Date.now();
+  const bucket = attemptBuckets.get(key) || { count: 0, resetAt: now + ATTEMPT_LIMIT_WINDOW_MS };
+  if (bucket.resetAt <= now) {
+    bucket.count = 0;
+    bucket.resetAt = now + ATTEMPT_LIMIT_WINDOW_MS;
+  }
+  if (bucket.count >= limit) {
+    const retryAfter = Math.max(1, Math.ceil((bucket.resetAt - now) / 1000));
+    return { blocked: true, retryAfter };
+  }
+  bucket.count += 1;
+  attemptBuckets.set(key, bucket);
+  return { blocked: false };
+}
+
+function clearAttempts(req, scope) {
+  attemptBuckets.delete(getAttemptKey(req, scope));
+}
+
 function sign(user) {
-  return jwt.sign({ sub: user.id, role: user.role }, process.env.JWT_SECRET, {
+  return jwt.sign({ sub: user.id, role: user.role, tv: user.tokenVersion ?? 0 }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_IN || "7d",
   });
 }
@@ -97,6 +130,11 @@ router.post("/signup", async (req, res, next) => {
 
 router.post("/login", async (req, res, next) => {
   try {
+    const attempt = checkAttempts(req, "login", 5);
+    if (attempt.blocked) {
+      res.set("Retry-After", String(attempt.retryAfter));
+      return next({ status: 429, message: "Too many login attempts. Try again later." });
+    }
     const { email, password } = z
       .object({ email: z.string().min(1), password: z.string().min(1) })
       .parse(req.body);
@@ -119,6 +157,7 @@ router.post("/login", async (req, res, next) => {
     }
     const ok = await bcrypt.compare(password, user.passwordHash);
     if (!ok) return next({ status: 401, message: "Invalid credentials" });
+    clearAttempts(req, "login");
     res.json({ token: sign(user), user });
   } catch (e) { next(e); }
 });
@@ -167,10 +206,16 @@ router.patch("/profile", authRequired, async (req, res, next) => {
 
 router.post("/forgot-password", async (req, res, next) => {
   try {
-    const { identifier, phone, newPassword } = z
+    const attempt = checkAttempts(req, "forgot-password", 6);
+    if (attempt.blocked) {
+      res.set("Retry-After", String(attempt.retryAfter));
+      return next({ status: 429, message: "Too many reset attempts. Try again later." });
+    }
+    const { identifier, phone, otp, newPassword } = z
       .object({
         identifier: z.string().min(1),
         phone: z.string().min(7).max(20),
+        otp: z.string().min(6).max(6),
         newPassword: z.string().min(6).max(200),
       })
       .parse(req.body);
@@ -186,14 +231,67 @@ router.post("/forgot-password", async (req, res, next) => {
     }
 
     const user = await User.findOne(query);
-    if (!user) {
-      return next({ status: 404, message: "User not found with matching email/ID and phone number" });
+    if (!user || !user.is2faEnabled || !user.totpSecret) {
+      return next({ status: 401, message: "Invalid details or Authenticator code" });
+    }
+
+    const isValid = authenticator.verify({ token: otp, secret: user.totpSecret });
+    if (!isValid) {
+      return next({ status: 401, message: "Invalid Authenticator Code" });
     }
 
     user.passwordHash = await bcrypt.hash(newPassword, 10);
+    user.tokenVersion = (user.tokenVersion ?? 0) + 1;
     await user.save();
+    clearAttempts(req, "forgot-password");
 
     res.json({ ok: true, message: "Password has been reset successfully." });
+  } catch (e) {
+    next(e);
+  }
+});
+
+router.post("/2fa/generate", authRequired, async (req, res, next) => {
+  try {
+    const secret = authenticator.generateSecret();
+    const otpauth = authenticator.keyuri(req.user.email || req.user.employeeId, "WorkFlow HR", secret);
+    const qrCodeDataUrl = await qrcode.toDataURL(otpauth);
+    
+    // Keep a pending secret until the code is verified successfully.
+    req.user.pendingTotpSecret = secret;
+    await req.user.save();
+
+    res.json({ secret, qrCode: qrCodeDataUrl });
+  } catch (e) {
+    next(e);
+  }
+});
+
+router.post("/2fa/verify", authRequired, async (req, res, next) => {
+  try {
+    const attempt = checkAttempts(req, "2fa-verify", 6);
+    if (attempt.blocked) {
+      res.set("Retry-After", String(attempt.retryAfter));
+      return next({ status: 429, message: "Too many verification attempts. Try again later." });
+    }
+    const otp = String(req.body?.otp || "").trim();
+    const secret = req.user.pendingTotpSecret || req.user.totpSecret;
+    if (!secret) {
+      return next({ status: 400, message: "No 2FA secret found to verify. Generate one first." });
+    }
+    
+    const isValid = authenticator.verify({ token: otp, secret });
+    if (!isValid) {
+      return next({ status: 401, message: "Invalid Authenticator Code" });
+    }
+    
+    req.user.totpSecret = secret;
+    req.user.pendingTotpSecret = undefined;
+    req.user.is2faEnabled = true;
+    await req.user.save();
+    clearAttempts(req, "2fa-verify");
+    
+    res.json({ message: "2FA successfully enabled.", user: req.user });
   } catch (e) {
     next(e);
   }
