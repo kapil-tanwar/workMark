@@ -14,36 +14,6 @@ import { notifyAdmins } from "../services/notification.js";
 
 const router = Router();
 
-const attemptBuckets = new Map();
-const ATTEMPT_LIMIT_WINDOW_MS = 15 * 60 * 1000;
-
-function getAttemptKey(req, scope) {
-  return `${scope}:${req.ip || "unknown"}`;
-}
-
-function checkAttempts(req, scope, limit) {
-  const key = getAttemptKey(req, scope);
-  const now = Date.now();
-  const bucket = attemptBuckets.get(key) || {
-    count: 0,
-    resetAt: now + ATTEMPT_LIMIT_WINDOW_MS,
-  };
-  if (bucket.resetAt <= now) {
-    bucket.count = 0;
-    bucket.resetAt = now + ATTEMPT_LIMIT_WINDOW_MS;
-  }
-  if (bucket.count >= limit) {
-    const retryAfter = Math.max(1, Math.ceil((bucket.resetAt - now) / 1000));
-    return { blocked: true, retryAfter };
-  }
-  bucket.count += 1;
-  attemptBuckets.set(key, bucket);
-  return { blocked: false };
-}
-
-function clearAttempts(req, scope) {
-  attemptBuckets.delete(getAttemptKey(req, scope));
-}
 
 function sign(user) {
   return jwt.sign(
@@ -159,14 +129,7 @@ router.post("/signup", async (req, res, next) => {
 
 router.post("/login", async (req, res, next) => {
   try {
-    const attempt = checkAttempts(req, "login", 5);
-    if (attempt.blocked) {
-      res.set("Retry-After", String(attempt.retryAfter));
-      return next({
-        status: 429,
-        message: "Too many login attempts. Try again later.",
-      });
-    }
+
     const { email, password } = z
       .object({ email: z.string().min(1), password: z.string().min(1) })
       .parse(req.body);
@@ -194,7 +157,7 @@ router.post("/login", async (req, res, next) => {
     }
     const ok = await bcrypt.compare(password, user.passwordHash);
     if (!ok) return next({ status: 401, message: "Invalid credentials" });
-    clearAttempts(req, "login");
+
     res.json({ token: sign(user), user });
   } catch (e) {
     next(e);
@@ -251,14 +214,7 @@ router.patch("/profile", authRequired, async (req, res, next) => {
 
 router.post("/forgot-password", async (req, res, next) => {
   try {
-    const attempt = checkAttempts(req, "forgot-password", 6);
-    if (attempt.blocked) {
-      res.set("Retry-After", String(attempt.retryAfter));
-      return next({
-        status: 429,
-        message: "Too many reset attempts. Try again later.",
-      });
-    }
+
     const { identifier, phone, otp, newPassword } = z
       .object({
         identifier: z.string().min(1),
@@ -297,7 +253,7 @@ router.post("/forgot-password", async (req, res, next) => {
     user.passwordHash = await bcrypt.hash(newPassword, 10);
     user.tokenVersion = (user.tokenVersion ?? 0) + 1;
     await user.save();
-    clearAttempts(req, "forgot-password");
+
 
     res.json({ ok: true, message: "Password has been reset successfully." });
   } catch (e) {
@@ -327,14 +283,7 @@ router.post("/2fa/generate", authRequired, async (req, res, next) => {
 
 router.post("/2fa/verify", authRequired, async (req, res, next) => {
   try {
-    const attempt = checkAttempts(req, "2fa-verify", 6);
-    if (attempt.blocked) {
-      res.set("Retry-After", String(attempt.retryAfter));
-      return next({
-        status: 429,
-        message: "Too many verification attempts. Try again later.",
-      });
-    }
+
     const otp = String(req.body?.otp || "").trim();
     const secret = req.user.pendingTotpSecret || req.user.totpSecret;
     if (!secret) {
@@ -353,7 +302,7 @@ router.post("/2fa/verify", authRequired, async (req, res, next) => {
     req.user.pendingTotpSecret = undefined;
     req.user.is2faEnabled = true;
     await req.user.save();
-    clearAttempts(req, "2fa-verify");
+
 
     res.json({ message: "2FA successfully enabled.", user: req.user });
   } catch (e) {
