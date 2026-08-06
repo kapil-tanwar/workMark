@@ -6,6 +6,7 @@ import { authRequired, adminOnly } from "../middleware/auth.js";
 const router = Router();
 router.use(authRequired, adminOnly);
 
+// admin : attendance report
 router.get("/attendance", async (req, res, next) => {
   try {
     const { from, to } = req.query;
@@ -21,6 +22,7 @@ router.get("/attendance", async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
+// admin: leave report
 router.get("/leaves", async (req, res, next) => {
   try {
     const { from, to } = req.query;

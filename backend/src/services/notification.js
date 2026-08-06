@@ -1,9 +1,7 @@
 import Notification from "../models/Notification.js";
 import User from "../models/User.js";
 
-/**
- * Send a notification to a specific user
- */
+// Send a notification to a specific user
 export async function notifyUser(userId, title, message, type = "system", relatedId = null) {
   try {
     await Notification.create({
@@ -18,9 +16,8 @@ export async function notifyUser(userId, title, message, type = "system", relate
   }
 }
 
-/**
- * Send a notification to all active, approved admins
- */
+// Send a notification to all active, approved admins
+
 export async function notifyAdmins(title, message, type = "admin", relatedId = null) {
   try {
     const admins = await User.find({

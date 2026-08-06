@@ -10,6 +10,7 @@ router.use(authRequired);
 
 const DURATION_CREDIT = { half: 0.5, full: 1 };
 
+// get compoff total leaves
 router.get("/", async (req, res, next) => {
   try {
     const { userId, status } = req.query;
@@ -32,6 +33,8 @@ const createSchema = z.object({
   reason: z.string().min(1).max(500),
 });
 
+
+// request compoff
 router.post("/", async (req, res, next) => {
   try {
     const data = createSchema.parse(req.body);
@@ -46,6 +49,8 @@ router.post("/", async (req, res, next) => {
   }
 });
 
+
+// admin only: approves 
 router.patch("/:id/approve", adminOnly, async (req, res, next) => {
   try {
     const existing = await CompOffRequest.findById(req.params.id);
@@ -77,6 +82,7 @@ router.patch("/:id/approve", adminOnly, async (req, res, next) => {
   }
 });
 
+// admin only: rejects 
 router.patch("/:id/reject", adminOnly, async (req, res, next) => {
   try {
     const request = await CompOffRequest.findByIdAndUpdate(
@@ -95,6 +101,7 @@ router.patch("/:id/reject", adminOnly, async (req, res, next) => {
   }
 });
 
+// deletes a comp-off request
 router.delete("/:id", async (req, res, next) => {
   try {
     const request = await CompOffRequest.findById(req.params.id);

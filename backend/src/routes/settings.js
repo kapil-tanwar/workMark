@@ -8,6 +8,7 @@ import { notifyUser } from "../services/notification.js";
 const router = Router();
 router.use(authRequired);
 
+// grabs the global settings
 router.get("/", async (_req, res, next) => {
   try {
     const s = (await Settings.findOne({ key: "global" })) || (await Settings.create({ key: "global" }));
@@ -24,6 +25,7 @@ const schema = z.object({
   monthlyEarnedAccrual: z.number().min(0).optional(),
 });
 
+// admin only: updates the global settings
 router.patch("/", adminOnly, async (req, res, next) => {
   try {
     const data = schema.parse(req.body);
@@ -34,6 +36,7 @@ router.patch("/", adminOnly, async (req, res, next) => {
   }
 });
 
+// lists out people who signed up for an admin account and are waiting for approval
 router.get("/admin-requests", adminOnly, async (req, res, next) => {
   try {
     const requests = await User.find({ role: "admin", approvalStatus: "pending" }).select("-passwordHash");
@@ -43,6 +46,7 @@ router.get("/admin-requests", adminOnly, async (req, res, next) => {
   }
 });
 
+// admin: approves a new admin
 router.patch("/admin-requests/:id/approve", adminOnly, async (req, res, next) => {
   try {
     const user = await User.findByIdAndUpdate(req.params.id, { approvalStatus: "approved", active: true }, { new: true });
@@ -53,10 +57,10 @@ router.patch("/admin-requests/:id/approve", adminOnly, async (req, res, next) =>
   }
 });
 
+// admin only: denies an admin signup request
 router.patch("/admin-requests/:id/reject", adminOnly, async (req, res, next) => {
   try {
     const user = await User.findByIdAndUpdate(req.params.id, { approvalStatus: "rejected", active: false }, { new: true });
-    // Not strictly necessary to notify rejected admins since they can't login, but we can try just in case we add email later.
     res.json({ user });
   } catch (e) {
     next(e);

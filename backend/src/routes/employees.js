@@ -8,11 +8,13 @@ import { creditNewEmployeeEarnedLeave } from "../utils/earnedAccrual.js";
 const router = Router();
 router.use(authRequired);
 
+// admin : gets all employee
 router.get("/", adminOnly, async (_req, res, next) => {
   try { res.json({ employees: await User.find().sort({ createdAt: -1 }) }); }
   catch (e) { next(e); }
 });
 
+// gets the details for a specific employee.
 router.get("/:id", async (req, res, next) => {
   try {
     if (req.user.role !== "admin" && String(req.user._id) !== req.params.id) {
@@ -37,6 +39,7 @@ const createSchema = z.object({
   compOffLeaves: z.number().optional(),
 });
 
+// admin : creates a new employee 
 router.post("/", adminOnly, async (req, res, next) => {
   try {
     const data = createSchema.parse(req.body);
@@ -84,6 +87,7 @@ const updateSchema = z.object({
   compOffLeaves: z.number().optional(),
 });
 
+// admin  updates an employee's details 
 router.patch("/:id", adminOnly, async (req, res, next) => {
   try {
     const data = updateSchema.parse(req.body);
@@ -136,6 +140,7 @@ router.patch("/:id", adminOnly, async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
+// admin : deletes  employee
 router.delete("/:id", adminOnly, async (req, res, next) => {
   try {
     const u = await User.findByIdAndDelete(req.params.id);

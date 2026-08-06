@@ -11,6 +11,7 @@ import { notifyAdmins, notifyUser } from "../services/notification.js";
 const router = Router();
 router.use(authRequired);
 
+// calculates and returns how many leave days the logged-in user has left
 router.get("/balance", async (req, res, next) => {
   try {
     await ensureEarnedAccrualUpToDate();
@@ -22,6 +23,7 @@ router.get("/balance", async (req, res, next) => {
   }
 });
 
+// gets a list of leave requests. admins see everyone's, employees only see their own
 router.get("/", async (req, res, next) => {
   try {
     await ensureEarnedAccrualUpToDate();
@@ -54,6 +56,7 @@ async function validateLeaveRequest(userId, type, startDate, endDate, duration, 
   return canRequestLeave(user, leaves, type, startDate, endDate, duration);
 }
 
+// handles submitting a new leave request.
 router.post("/", async (req, res, next) => {
   try {
     const data = createSchema.parse(req.body);
@@ -83,6 +86,7 @@ router.post("/", async (req, res, next) => {
   }
 });
 
+// admin : approves the leave 
 router.patch("/:id/approve", adminOnly, async (req, res, next) => {
   try {
     const existing = await Leave.findById(req.params.id);
@@ -115,6 +119,7 @@ router.patch("/:id/approve", adminOnly, async (req, res, next) => {
   }
 });
 
+// admin reject leave request
 router.patch("/:id/reject", adminOnly, async (req, res, next) => {
   try {
     const leave = await Leave.findByIdAndUpdate(
@@ -133,6 +138,7 @@ router.patch("/:id/reject", adminOnly, async (req, res, next) => {
   }
 });
 
+// deletes a leave request.
 router.delete("/:id", async (req, res, next) => {
   try {
     const leave = await Leave.findById(req.params.id);
