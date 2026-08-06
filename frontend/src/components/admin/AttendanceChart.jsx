@@ -1,12 +1,6 @@
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { useEffect, useState } from "react";
 
-/* Colors match the MD3 reference:
-   Present → tertiary  (#004f35 forest green)
-   Absent  → error/destructive (#ba1a1a red)
-   Leave   → primary (#0037b0 deep blue)
-   These are hardcoded hex so they stay consistent regardless of CSS var resolution issues in SVG context.
-*/
 const LIGHT_COLORS = { Present: "#00513a", Absent: "#ba1a1a", Leave: "#0037b0" };
 const DARK_COLORS  = { Present: "#4edea3", Absent: "#ef4444", Leave: "#6d9fff" };
 

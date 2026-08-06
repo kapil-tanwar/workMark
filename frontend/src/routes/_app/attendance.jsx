@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+
 import { useAuth } from "@/lib/auth-context";
 import { store, totalHours } from "@/lib/store";
 import { useWorkflowRefresh } from "@/hooks/use-workflow-refresh";
@@ -8,10 +8,7 @@ import { WeekendNotice } from "@/components/attendance/WeekendNotice";
 import { todayISO } from "@/lib/utils/date";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/_app/attendance")({
-  head: () => ({ meta: [{ title: "Attendance — WorkFlow HR" }] }),
-  component: AttendancePage,
-});
+
 
 function StatusChip({ status }) {
   const map = {
@@ -31,7 +28,7 @@ function StatusChip({ status }) {
   );
 }
 
-function AttendancePage() {
+export default function AttendancePage() {
   const { user } = useAuth();
   useWorkflowRefresh();
 

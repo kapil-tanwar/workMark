@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { Link } from "react-router-dom";
 import { useAuth } from "@/lib/auth-context";
 import { store, currentMonthCounts, leaveBalance } from "@/lib/store";
 import { useWorkflowRefresh } from "@/hooks/use-workflow-refresh";
@@ -10,10 +10,7 @@ import { formatLeaveDays } from "@/lib/leave-utils";
 import { CheckCircle2, XCircle, CalendarDays, Sparkles, Plus, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/_app/dashboard")({
-  head: () => ({ meta: [{ title: "Dashboard — WorkFlow HR" }] }),
-  component: EmployeeDashboard,
-});
+
 
 /* Status chip matching the MD3 reference */
 function StatusChip({ status }) {
@@ -50,7 +47,7 @@ function StatTile({ label, value, hint, icon: Icon, tileClass }) {
   );
 }
 
-function EmployeeDashboard() {
+export default function EmployeeDashboard() {
   const { user } = useAuth();
   useWorkflowRefresh();
 

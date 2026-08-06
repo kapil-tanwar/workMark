@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate, redirect } from "@tanstack/react-router";
+import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import {
   Loader2,
@@ -19,22 +19,9 @@ import { toast } from "sonner";
 import { getSavedUser } from "@/lib/auth-helpers";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
-export const Route = createFileRoute("/signup")({
-  beforeLoad: () => {
-    if (typeof window === "undefined") return;
-    const searchParams = new URLSearchParams(window.location.search);
-    if (searchParams.get("access") !== "secure") {
-      throw redirect({ to: "/login" });
-    }
-    const token = getToken();
-    const user = getSavedUser();
-    if (token && user) throw redirect({ to: user.role === "admin" ? "/admin" : "/dashboard" });
-  },
-  head: () => ({ meta: [{ title: "Create account — WorkFlow HR" }] }),
-  component: SignupPage,
-});
 
-function SignupPage() {
+
+export default function SignupPage() {
   const { signup } = useAuth();
   const navigate = useNavigate();
   const [name, setName] = useState("");
@@ -58,7 +45,7 @@ function SignupPage() {
     try {
       const u = await signup({ name, email, password, role, employeeId, phone });
       toast.success("Account created!");
-      navigate({ to: u.role === "admin" ? "/admin" : "/dashboard" });
+      navigate(u.role === "admin" ? "/admin" : "/dashboard");
     } catch (err) {
       toast.error(err.message);
     } finally {

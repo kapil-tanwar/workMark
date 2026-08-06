@@ -72,20 +72,29 @@ export async function ensureEarnedAccrualUpToDate() {
 }
 
 export function scheduleMonthlyAccrual() {
+  const ONE_DAY = 24 * 60 * 60 * 1000;
+
   function msUntilNextFirst() {
     const now = new Date();
     const next = new Date(now.getFullYear(), now.getMonth() + 1, 1, 0, 0, 1);
     return Math.max(1000, next.getTime() - now.getTime());
   }
 
-  async function tick() {
-    try {
-      await runMonthlyEarnedAccrual(new Date());
-    } catch (err) {
-      console.error("Monthly earned leave accrual failed:", err.message);
+  function scheduleNext() {
+    const delay = msUntilNextFirst();
+    if (delay > ONE_DAY) {
+      setTimeout(scheduleNext, ONE_DAY);
+    } else {
+      setTimeout(async () => {
+        try {
+          await runMonthlyEarnedAccrual(new Date());
+        } catch (err) {
+          console.error("Monthly earned leave accrual failed:", err.message);
+        }
+        scheduleNext();
+      }, delay);
     }
-    setTimeout(tick, msUntilNextFirst());
   }
 
-  setTimeout(tick, msUntilNextFirst());
+  scheduleNext();
 }

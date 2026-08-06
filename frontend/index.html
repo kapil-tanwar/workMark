@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WorkFlow HR</title>
+    <meta name="description" content="Attendance and leave management for modern teams." />
+    <meta property="og:title" content="WorkFlow HR" />
+    <meta property="og:description" content="Attendance and leave management for modern teams." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" />
+    <script>
+      (function(){
+        try {
+          var t=localStorage.getItem('wf_theme');
+          var d=window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if(t==='dark'||(t!=='light'&&d))document.documentElement.classList.add('dark')
+        } catch(e){}
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

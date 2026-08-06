@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
 import {
   ArrowRight, Timer, CalendarRange, UsersRound, PlayCircle, Check, Globe, Share2, Briefcase, User, CheckCircle
@@ -6,15 +6,7 @@ import {
 import { useAuth } from "@/lib/auth-context";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
-export const Route = createFileRoute("/")({
-  head: () => ({
-    meta: [
-      { title: "WorkFlow HR — Developer-Grade HR" },
-      { name: "description", content: "Track attendance, manage leave requests, and keep your team aligned in one modern workspace." },
-    ],
-  }),
-  component: LandingPage,
-});
+
 
 /* ── Scroll animation wrapper ── */
 function FadeIn({ children, delay = 0 }) {
@@ -48,12 +40,12 @@ function FadeIn({ children, delay = 0 }) {
   );
 }
 
-function LandingPage() {
+export default function LandingPage() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!loading && user) navigate({ to: user.role === "admin" ? "/admin" : "/dashboard" });
+    if (!loading && user) navigate(user.role === "admin" ? "/admin" : "/dashboard");
   }, [loading, navigate, user]);
 
   return (

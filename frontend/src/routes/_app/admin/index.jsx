@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+
 import { store } from "@/lib/store";
 import { useWorkflowRefresh } from "@/hooks/use-workflow-refresh";
 import { PageHeader, StatCard, StatusBadge } from "@/components/wf-ui";
@@ -11,12 +11,9 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
-export const Route = createFileRoute("/_app/admin/")({
-  head: () => ({ meta: [{ title: "Admin Dashboard — WorkFlow HR" }] }),
-  component: AdminDashboard,
-});
 
-function AdminDashboard() {
+
+export default function AdminDashboard() {
   useWorkflowRefresh();
   const [activeModal, setActiveModal] = useState(null);
 

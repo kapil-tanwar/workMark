@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { Link } from "react-router-dom";
 import { store } from "@/lib/store";
 import { useWorkflowRefresh } from "@/hooks/use-workflow-refresh";
 import { PageHeader } from "@/components/wf-ui";
@@ -19,12 +19,9 @@ import {
 import { cn } from "@/lib/utils";
 import { forgotPassword, getAdminRequests, approveAdminRequest, rejectAdminRequest, generate2FA, verify2FA } from "@/lib/api";
 
-export const Route = createFileRoute("/_app/admin/settings")({
-  head: () => ({ meta: [{ title: "Settings — WorkFlow HR" }] }),
-  component: SettingsPage,
-});
 
-function SettingsPage() {
+
+export default function SettingsPage() {
   useWorkflowRefresh();
   const { user, updateProfile } = useAuth();
   const [s, setS] = useState(store.getSettings());

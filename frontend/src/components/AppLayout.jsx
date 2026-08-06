@@ -1,4 +1,4 @@
-import { Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
+import { Link, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/lib/auth-context";
 import { useWorkflowRefresh } from "@/hooks/use-workflow-refresh";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -35,23 +35,23 @@ const adminNav = [
 export function AppLayout() {
   const { user, logout, loading } = useAuth();
   const navigate = useNavigate();
-  const path = useRouterState({ select: (s) => s.location.pathname });
+  const { pathname: path } = useLocation();
   const [open, setOpen] = useState(false);
   useWorkflowRefresh();
 
   useEffect(() => {
     if (!loading && !user) {
-      navigate({ to: "/login" });
+      navigate("/login");
       return;
     }
     if (!loading && user) {
       const isAdmin = user.role === "admin";
       if (isAdmin && !path.startsWith("/admin")) {
         logout();
-        navigate({ to: "/admin/login" });
+        navigate("/admin/login");
       } else if (!isAdmin && path.startsWith("/admin")) {
         logout();
-        navigate({ to: "/login" });
+        navigate("/login");
       }
     }
   }, [user, loading, navigate, path, logout]);
@@ -122,7 +122,7 @@ export function AppLayout() {
         {/* Sign out */}
         <div className="pt-4 border-t border-sidebar-border">
           <button
-            onClick={() => { logout(); navigate({ to: "/login" }); }}
+            onClick={() => { logout(); navigate("/login"); }}
             className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-destructive hover:bg-error-container hover:text-on-error-container transition-all duration-150"
           >
             <LogOut className="size-[18px] shrink-0" />
@@ -192,9 +192,9 @@ export function AppLayout() {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 {user.role === "employee" && (
-                  <DropdownMenuItem onClick={() => navigate({ to: "/profile" })}>Profile</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate("/profile")}>Profile</DropdownMenuItem>
                 )}
-                <DropdownMenuItem onClick={() => { logout(); navigate({ to: "/login" }); }}>
+                <DropdownMenuItem onClick={() => { logout(); navigate("/login"); }}>
                   Sign out
                 </DropdownMenuItem>
               </DropdownMenuContent>

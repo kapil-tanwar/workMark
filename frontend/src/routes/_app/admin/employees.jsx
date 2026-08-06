@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+
 import { validateEmployeeId } from "@/lib/auth-helpers";
 import { store, saveEmployee, toggleEmployeeActive, deleteEmployee, leaveBalance } from "@/lib/store";
 import { useWorkflowRefresh } from "@/hooks/use-workflow-refresh";
@@ -179,10 +179,7 @@ function EmployeeFormModal({ open, onOpenChange, edit, form, setForm, onSave, sa
   );
 }
 
-export const Route = createFileRoute("/_app/admin/employees")({
-  head: () => ({ meta: [{ title: "Employees — WorkFlow HR" }] }),
-  component: EmployeesPage,
-});
+
 
 const empty = {
   name: "", email: "", employeeId: "", department: "",
@@ -203,7 +200,7 @@ function avatarStyle(name = "") {
 
 const PAGE_SIZE = 8;
 
-function EmployeesPage() {
+export default function EmployeesPage() {
   useWorkflowRefresh();
   const [q, setQ] = useState("");
   const [page, setPage] = useState(1);

@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate, redirect } from "@tanstack/react-router";
+import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { ArrowRight, Loader2, Eye, EyeOff, User, Lock, Briefcase } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
@@ -7,23 +7,9 @@ import { toast } from "sonner";
 import { getSavedUser } from "@/lib/auth-helpers";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
-export const Route = createFileRoute("/admin/login")({
-  beforeLoad: () => {
-    if (typeof window === "undefined") return;
-    const token = getToken();
-    const user = getSavedUser();
-    if (token && user) throw redirect({ to: user.role === "admin" ? "/admin" : "/dashboard" });
-  },
-  head: () => ({
-    meta: [
-      { title: "Admin Sign in — WorkFlow HR" },
-      { name: "description", content: "Sign in to your WorkFlow HR portal." },
-    ],
-  }),
-  component: LoginPage,
-});
 
-function LoginPage() {
+
+export default function LoginPage() {
   const { login, logout } = useAuth();
   const navigate = useNavigate();
   const [identifier, setIdentifier] = useState("");
@@ -44,7 +30,7 @@ function LoginPage() {
         return;
       }
       toast.success(`Welcome back, ${u.name.split(" ")[0]}`);
-      navigate({ to: "/admin" });
+      navigate("/admin");
     } catch (err) {
       toast.error(err.message);
     } finally {
@@ -141,9 +127,20 @@ function LoginPage() {
             <h2 className="font-headline text-3xl font-bold mb-1.5 text-foreground">
               Admin Sign in
             </h2>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground mb-4">
               Enter your credentials to access the portal
             </p>
+            
+            <button
+              type="button"
+              onClick={() => {
+                setIdentifier("admin@demo.com");
+                setPassword("password");
+              }}
+              className="w-full py-2 mb-2 rounded-lg border border-border text-xs font-bold text-muted-foreground hover:bg-muted/30 hover:text-foreground transition-colors"
+            >
+              Demo Admin Account
+            </button>
           </div>
 
           <form onSubmit={submit} className="space-y-5">

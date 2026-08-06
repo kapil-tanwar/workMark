@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+
 import { store } from "@/lib/store";
 import { useWorkflowRefresh } from "@/hooks/use-workflow-refresh";
 import { PageHeader } from "@/components/wf-ui";
@@ -14,10 +14,7 @@ function recordExport(name, fmt) {
   return sliced;
 }
 
-export const Route = createFileRoute("/_app/admin/reports")({
-  head: () => ({ meta: [{ title: "Reports — WorkFlow HR" }] }),
-  component: ReportsPage,
-});
+
 
 function downloadCSV(name, rows) {
   const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
@@ -65,7 +62,7 @@ function ExportButton({ label, onClick, icon: Icon }) {
   );
 }
 
-function ReportsPage() {
+export default function ReportsPage() {
   useWorkflowRefresh();
   const ym = new Date().toISOString().slice(0, 7);
   const users = store.getUsers().filter((u) => u.role === "employee");

@@ -2,7 +2,7 @@
 
 | Folder | Description | Dev URL |
 |--------|-------------|---------|
-| [`frontend/`](frontend/) | React frontend (TanStack Start + Vite) | http://localhost:8080 |
+| [`frontend/`](frontend/) | React frontend (React Router + Vite) | http://localhost:8080 |
 | [`backend/`](backend/) | Express + MongoDB API | http://localhost:4000 |
 
 ## Quick start

@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate, redirect } from "@tanstack/react-router";
+import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import {
   Loader2,
@@ -19,18 +19,9 @@ import { toast } from "sonner";
 import { getSavedUser } from "@/lib/auth-helpers";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
-export const Route = createFileRoute("/admin/signup")({
-  beforeLoad: () => {
-    if (typeof window === "undefined") return;
-    const token = getToken();
-    const user = getSavedUser();
-    if (token && user) throw redirect({ to: user.role === "admin" ? "/admin" : "/dashboard" });
-  },
-  head: () => ({ meta: [{ title: "Admin Create account — WorkFlow HR" }] }),
-  component: SignupPage,
-});
 
-function SignupPage() {
+
+export default function SignupPage() {
   const { signup } = useAuth();
   const navigate = useNavigate();
   const [name, setName] = useState("");
@@ -57,10 +48,10 @@ function SignupPage() {
         toast.success(
           result.message || "Your admin account request has been submitted for approval.",
         );
-        navigate({ to: "/admin/login" });
+        navigate("/admin/login");
       } else {
         toast.success("Account created!");
-        navigate({ to: "/admin" });
+        navigate("/admin");
       }
     } catch (err) {
       toast.error(err.message);
