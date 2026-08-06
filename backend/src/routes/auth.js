@@ -5,7 +5,6 @@ import { z } from "zod";
 import { authenticator } from "otplib";
 import qrcode from "qrcode";
 
-// Allow a 60-second window before and after the current token to prevent "invalid authentication code" on slow entry
 authenticator.options = { window: [2, 2] };
 import User from "../models/User.js";
 import { authRequired } from "../middleware/auth.js";
@@ -59,6 +58,7 @@ const signupSchema = z
       });
     }
   });
+
 
 router.post("/signup", async (req, res, next) => {
   try {
@@ -174,6 +174,7 @@ const profileSchema = z.object({
   designation: z.string().max(120).optional(),
 });
 
+
 router.patch("/profile", authRequired, async (req, res, next) => {
   try {
     const data = profileSchema.parse(req.body);
@@ -261,6 +262,7 @@ router.post("/forgot-password", async (req, res, next) => {
   }
 });
 
+
 router.post("/2fa/generate", authRequired, async (req, res, next) => {
   try {
     const secret = authenticator.generateSecret();
@@ -271,7 +273,6 @@ router.post("/2fa/generate", authRequired, async (req, res, next) => {
     );
     const qrCodeDataUrl = await qrcode.toDataURL(otpauth);
 
-    // Keep a pending secret until the code is verified successfully.
     req.user.pendingTotpSecret = secret;
     await req.user.save();
 

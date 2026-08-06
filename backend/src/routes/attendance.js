@@ -38,6 +38,7 @@ router.get("/", async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
+// fetch attendence record for today checkins
 router.get("/today", async (req, res, next) => {
   try {
     const date = req.query.date || todayStr();
@@ -46,6 +47,7 @@ router.get("/today", async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
+// route to mark attendence
 router.post("/check-in", async (req, res, next) => {
   try {
     const date = req.body.date || todayStr();
@@ -57,7 +59,6 @@ router.post("/check-in", async (req, res, next) => {
     const parts = (settings.workingHours || "09:00 – 18:00").split(/[-–—]/).map(s => s.trim());
     const dutyEndTime = parts[1] || "18:00";
 
-    // Auto-checkout any prior active check-ins
     await Attendance.updateMany(
       { user: req.user._id, date: { $ne: date }, checkIn: { $exists: true }, checkOut: { $exists: false } },
       { $set: { checkOut: dutyEndTime } }
@@ -76,6 +77,7 @@ router.post("/check-in", async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
+// routes for checkout
 router.post("/check-out", async (req, res, next) => {
   try {
     const date = req.body.date || todayStr();
@@ -93,6 +95,7 @@ router.post("/check-out", async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
+// get  user's attendance history  for a month 
 router.get("/summary/:userId", async (req, res, next) => {
   try {
     const userId = req.params.userId;

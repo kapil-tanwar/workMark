@@ -21,7 +21,7 @@ async function run() {
 
   await Settings.create({ key: "global" });
 
-  console.log(`✓ Seeded ${users.length} admin user. Add employees via signup or the admin panel.`);
+  console.log(`Seeded ${users.length} admin user. Add employees via signup or the admin panel.`);
   console.log("Login with admin@demo.com / password");
   await mongoose.disconnect();
 }
