@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { BadgeCheck, Phone, Lock, Eye, EyeOff, ArrowLeft, CheckCircle2, Loader2, ArrowRight, Briefcase } from "lucide-react";
 import { forgotPassword } from "@/lib/api";
@@ -6,12 +6,9 @@ import { toast } from "sonner";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAuth } from "@/lib/auth-context";
 
-export const Route = createFileRoute("/forgot-password")({
-  head: () => ({ meta: [{ title: "Reset password — WorkFlow HR" }] }),
-  component: ForgotPage,
-});
 
-function ForgotPage() {
+
+export default function ForgotPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [identifier, setIdentifier] = useState("");

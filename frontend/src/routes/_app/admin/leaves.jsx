@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+
 import { store, decideLeave, decideCompOffRequest } from "@/lib/store";
 import { useWorkflowRefresh } from "@/hooks/use-workflow-refresh";
 import { PageHeader } from "@/components/wf-ui";
@@ -14,10 +14,7 @@ import { toast } from "sonner";
 import { formatLeaveDays } from "@/lib/leave-utils";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/_app/admin/leaves")({
-  head: () => ({ meta: [{ title: "Leave Requests — WorkFlow HR" }] }),
-  component: AdminLeaves,
-});
+
 
 function formatDuration(duration) {
   if (duration === "half") return "Half day";
@@ -54,7 +51,7 @@ function StatusChip({ status }) {
 
 const PAGE_SIZE = 10;
 
-function AdminLeaves() {
+export default function AdminLeaves() {
   useWorkflowRefresh();
   const [section, setSection] = useState("all");   // "all" | "leave" | "compoff"
   const [statusTab, setStatusTab] = useState("All"); // "Pending" | "Approved" | "Rejected" | "All"

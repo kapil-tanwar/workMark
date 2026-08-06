@@ -15,7 +15,8 @@ async function run() {
 
   const hash = await bcrypt.hash("password", 10);
   const users = await User.insertMany([
-    { name: "Alex Morgan", email: "admin@demo.com", passwordHash: hash, role: "admin", employeeId: "EMP-0001", department: "Human Resources", designation: "HR Director", phone: "+1 (555) 010-1000" },
+    { name: "Alex Morgan", email: "admin@demo.com", passwordHash: hash, role: "admin", employeeId: "EMP-0001", department: "Human Resources", designation: "HR Director", phone: "+1 (555) 010-1000", active: true, approvalStatus: "approved" },
+    { name: "Sam Employee", email: "employee@demo.com", passwordHash: hash, role: "employee", employeeId: "EMP-0002", department: "Engineering", designation: "Software Engineer", phone: "+1 (555) 010-2000", active: true, approvalStatus: "approved" },
   ]);
 
   await Settings.create({ key: "global" });

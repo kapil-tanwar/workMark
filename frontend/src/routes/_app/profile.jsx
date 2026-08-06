@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { Link } from "react-router-dom";
 import { useAuth } from "@/lib/auth-context";
 import { PageHeader } from "@/components/wf-ui";
 import { Button } from "@/components/ui/button";
@@ -14,12 +14,9 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { forgotPassword, generate2FA, verify2FA } from "@/lib/api";
 
-export const Route = createFileRoute("/_app/profile")({
-  head: () => ({ meta: [{ title: "Profile — WorkFlow HR" }] }),
-  component: ProfilePage,
-});
 
-function ProfilePage() {
+
+export default function ProfilePage() {
   const { user, updateProfile } = useAuth();
   const [editOpen, setEditOpen] = useState(false);
   const [saving, setSaving] = useState(false);

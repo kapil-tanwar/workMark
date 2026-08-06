@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+
 import { store, totalHours } from "@/lib/store";
 import { useWorkflowRefresh } from "@/hooks/use-workflow-refresh";
 import { PageHeader } from "@/components/wf-ui";
@@ -6,10 +6,7 @@ import { Search, SlidersHorizontal, ChevronLeft, ChevronRight, Calendar } from "
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/_app/admin/attendance")({
-  head: () => ({ meta: [{ title: "Attendance Management — WorkFlow HR" }] }),
-  component: AdminAttendance,
-});
+
 
 const PAGE_SIZE = 12;
 
@@ -38,7 +35,7 @@ function StatusChip({ status }) {
   );
 }
 
-function AdminAttendance() {
+export default function AdminAttendance() {
   useWorkflowRefresh();
   const [q, setQ]       = useState("");
   const [date, setDate] = useState("");

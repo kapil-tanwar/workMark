@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+
 import { useAuth } from "@/lib/auth-context";
 import {
   store, leaveBalanceWithPending, submitLeave, cancelLeave,
@@ -84,10 +84,7 @@ function DField({ icon: Icon, type = "text", value, onChange, placeholder, class
   );
 }
 
-export const Route = createFileRoute("/_app/leave")({
-  head: () => ({ meta: [{ title: "Leave Management — WorkFlow HR" }] }),
-  component: LeavePage,
-});
+
 
 function formatDuration(duration) {
   if (duration === "half") return "Half day";
@@ -121,7 +118,7 @@ function StatusChip({ status }) {
   );
 }
 
-function LeavePage() {
+export default function LeavePage() {
   const { user } = useAuth();
   useWorkflowRefresh();
   const [open, setOpen] = useState(false);
