@@ -6,7 +6,7 @@ import { Toaster } from "./components/ui/sonner";
 // Non-app routes
 import LandingPage from "./routes/index";
 import LoginPage from "./routes/login";
-import SignupPage from "./routes/signup";
+import SignupPage from "./routes/signup"; // kept for admin/signup only
 import ForgotPasswordPage from "./routes/forgot-password";
 import AdminLoginPage from "./routes/admin.login";
 import AdminSignupPage from "./routes/admin.signup";
@@ -49,7 +49,7 @@ export default function App() {
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<LoginPage />} />
-            <Route path="/signup" element={<SignupPage />} />
+            <Route path="/signup" element={<Navigate to="/login" replace />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/admin/login" element={<AdminLoginPage />} />
             <Route path="/admin/signup" element={<AdminSignupPage />} />

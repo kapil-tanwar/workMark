@@ -61,14 +61,11 @@ export default function LandingPage() {
           </Link>
           <div className="hidden md:flex items-center gap-8">
             <ThemeToggle />
-            <Link to="/login" className="text-muted-foreground hover:text-primary transition-colors text-sm font-semibold cursor-pointer">
-              Log In
-            </Link>
             <Link
-              to="/signup"
+              to="/login"
               className="bg-primary text-primary-foreground px-6 py-2 rounded-full font-semibold hover:opacity-90 active:scale-95 transition-all text-sm cursor-pointer"
             >
-              Get Started
+              Log In
             </Link>
           </div>
           {/* Mobile Theme Toggle & Guest User Icon Link */}
@@ -77,7 +74,7 @@ export default function LandingPage() {
             <Link
               to="/login"
               className="size-10 rounded-full border border-border bg-card text-foreground hover:bg-muted flex items-center justify-center transition-all active:scale-95 shadow-sm"
-              title="Guest Sign In"
+              title="Sign In"
             >
               <User className="size-5" />
             </Link>
@@ -114,10 +111,10 @@ export default function LandingPage() {
             <FadeIn delay={350}>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
                 <Link
-                  to="/signup"
+                  to="/login"
                   className="w-full sm:w-auto font-bold text-base px-8 py-4 rounded-full transition-all hover:shadow-[0_0_20px_rgba(221,225,255,0.3)] active:scale-95 bg-primary text-primary-foreground text-center"
                 >
-                  Get Started Free
+                  Sign In to Dashboard
                 </Link>
                 <button
                   className="w-full sm:w-auto font-semibold text-base px-8 py-4 rounded-full border border-border transition-all hover:bg-muted active:scale-95 bg-card text-foreground flex items-center justify-center gap-2"
@@ -311,10 +308,10 @@ export default function LandingPage() {
                 </p>
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
                   <Link
-                    to="/signup"
+                    to="/login"
                     className="w-full sm:w-auto bg-primary-foreground text-primary px-10 py-4 rounded-full text-base font-extrabold hover:scale-105 active:scale-95 transition-all shadow-xl text-center"
                   >
-                    Get Started Free
+                    Sign In Now
                   </Link>
                   <button
                     className="w-full sm:w-auto bg-transparent border border-primary-foreground/30 text-primary-foreground px-10 py-5 rounded-full text-base font-bold hover:bg-primary-foreground/10 transition-all"
@@ -322,7 +319,7 @@ export default function LandingPage() {
                     Book a Workshop
                   </button>
                 </div>
-                <p className="pt-4 text-xs italic opacity-60 font-medium">No credit card required • 14-day free trial • Instant setup</p>
+                <p className="pt-4 text-xs italic opacity-60 font-medium">Secure portal • Enterprise-grade encryption • Instant access</p>
               </div>
             </div>
           </FadeIn>

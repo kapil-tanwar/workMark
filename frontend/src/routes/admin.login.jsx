@@ -245,7 +245,7 @@ export default function LoginPage() {
             </span> */}
             <span className="text-muted-foreground">
               New here?{" "}
-              <Link to="/signup" className="font-bold hover:underline text-primary">
+              <Link to="/admin/signup" className="font-bold hover:underline text-primary">
                 Create account
               </Link>
             </span>
