@@ -6,7 +6,7 @@ import { NotificationBell } from "@/components/NotificationBell";
 import {
   LayoutDashboard, Clock, CalendarDays, User as UserIcon,
   Users, ClipboardCheck, FileBarChart, Settings, LogOut,
-  Search, Menu, X, Briefcase,
+  Search, Menu, X, Briefcase, Sparkles, MessageCircle,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
@@ -15,6 +15,7 @@ import {
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { AiChat } from "@/components/AiChat";
 
 const employeeNav = [
   { to: "/dashboard",  label: "Dashboard",      icon: LayoutDashboard },
@@ -37,6 +38,7 @@ export function AppLayout() {
   const navigate = useNavigate();
   const { pathname: path } = useLocation();
   const [open, setOpen] = useState(false);
+  const [isAiChatOpen, setIsAiChatOpen] = useState(false);
   useWorkflowRefresh();
 
   useEffect(() => {
@@ -209,6 +211,24 @@ export function AppLayout() {
           </div>
         </main>
       </div>
+
+      {/* Floating AI Assistant Button (Employees Only) */}
+      {user.role === "employee" && (
+        <>
+          {!isAiChatOpen && (
+            <button
+              onClick={() => setIsAiChatOpen(true)}
+              className="fixed bottom-6 right-6 p-4 bg-primary text-primary-foreground rounded-full shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all z-[60] flex items-center justify-center group"
+              title="Ask HR Assistant"
+            >
+              <MessageCircle className="size-6 group-hover:scale-110 transition-transform" />
+            </button>
+          )}
+
+          {/* AI Chat Component */}
+          <AiChat isOpen={isAiChatOpen} onClose={() => setIsAiChatOpen(false)} />
+        </>
+      )}
     </div>
   );
 }

@@ -12,6 +12,7 @@ import compOffRoutes from "./routes/compOff.js";
 import reportRoutes from "./routes/reports.js";
 import settingsRoutes from "./routes/settings.js";
 import notificationRoutes from "./routes/notifications.js";
+import aiChatRoutes from "./routes/aiChat.js";
 import {
   ensureEarnedAccrualUpToDate,
   scheduleMonthlyAccrual,

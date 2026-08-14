@@ -6,6 +6,7 @@ export * from "./leaves";
 export * from "./compOff";
 export * from "./settings";
 export * from "./notifications";
+export * from "./aiChat";
 
 export async function healthCheck() {
   return (await import("./client")).request("/health");
