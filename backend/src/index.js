@@ -54,6 +54,7 @@ app.use("/api/comp-off", compOffRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/settings", settingsRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/ai/chat", aiChatRoutes);
 
 app.use((err, _req, res, _next) => {
   if (err?.name === "ZodError") {
