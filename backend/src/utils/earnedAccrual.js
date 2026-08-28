@@ -56,6 +56,7 @@ export async function creditNewEmployeeEarnedLeave(userId) {
   return amount;
 }
 
+
 export async function ensureEarnedAccrualUpToDate() {
   const now = new Date();
   const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);

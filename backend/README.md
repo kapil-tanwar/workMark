@@ -35,3 +35,5 @@ Employees can be added via signup or the admin Employees page in the frontend.
 | `MONGODB_URI` | MongoDB connection string |
 | `JWT_SECRET` | Secret for auth tokens |
 | `CORS_ORIGIN` | Frontend URL (default `http://localhost:8080`) |
+| `GROQ_API_KEY` | Groq API key |
+
