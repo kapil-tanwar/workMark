@@ -21,6 +21,23 @@
         } catch(e){}
       })();
     </script>
+    <style>
+      :root {
+        --background: #f8fafc;
+        --foreground: #0f172a;
+      }
+      .dark {
+        --background: #121416;
+        --foreground: #FFFFFF;
+      }
+      html, body {
+        margin: 0;
+        padding: 0;
+        background-color: var(--background);
+        color: var(--foreground);
+        min-height: 100vh;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
