@@ -26,13 +26,15 @@ import AdminLeavesPage from "./routes/_app/admin/leaves";
 import AdminReportsPage from "./routes/_app/admin/reports";
 import AdminSettingsPage from "./routes/_app/admin/settings";
 
+import { PageLoader } from "./components/PageLoader";
+
 const queryClient = new QueryClient();
 
 // Protected Route wrapper
 function ProtectedRoute({ children, allowedRoles }) {
   const { user, loading } = useAuth();
   
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <PageLoader />;
   if (!user) return <Navigate to="/login" replace />;
   if (allowedRoles && !allowedRoles.includes(user.role)) {
     return <Navigate to="/" replace />;
