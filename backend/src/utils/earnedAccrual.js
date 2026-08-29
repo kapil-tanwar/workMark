@@ -61,10 +61,13 @@ export async function ensureEarnedAccrualUpToDate() {
   const now = new Date();
   const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
-  const oldest = await User.findOne({ role: "employee" }).sort({ createdAt: 1 });
-  if (!oldest) return { credited: 0 };
+  const oldest = await User.findOne({ role: "employee", createdAt: { $exists: true, $ne: null } }).sort({ createdAt: 1 });
+  if (!oldest || !oldest.createdAt) return { credited: 0 };
 
-  let cursor = new Date(oldest.createdAt.getFullYear(), oldest.createdAt.getMonth(), 1);
+  const createdAtDate = new Date(oldest.createdAt);
+  if (isNaN(createdAtDate.getTime())) return { credited: 0 };
+
+  let cursor = new Date(createdAtDate.getFullYear(), createdAtDate.getMonth(), 1);
 
   while (cursor <= currentMonthStart) {
     await runMonthlyEarnedAccrual(cursor);
