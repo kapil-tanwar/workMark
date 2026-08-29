@@ -25,3 +25,4 @@ export function adminOnly(req, _res, next) {
     return next({ status: 403, message: "Admin only" });
   next();
 }
+
