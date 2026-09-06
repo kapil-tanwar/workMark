@@ -18,6 +18,7 @@ import {
   scheduleMonthlyAccrual,
 } from "./utils/earnedAccrual.js";
 import { scheduleDailyAttendanceProcessing } from "./utils/dailyDutyScheduler.js";
+import { ensureDemoUsers } from "./utils/seedDemo.js";
 
 const app = express();
 const allowedOrigins = process.env.CORS_ORIGIN?.split(",")
@@ -71,6 +72,7 @@ const PORT = process.env.PORT || 4000;
 async function start() {
   try {
     await connectDB();
+    await ensureDemoUsers();
     await ensureEarnedAccrualUpToDate();
     scheduleMonthlyAccrual();
     scheduleDailyAttendanceProcessing();

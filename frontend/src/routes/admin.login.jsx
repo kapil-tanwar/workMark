@@ -134,12 +134,12 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => {
-                setIdentifier("admin@demo.com");
+                setIdentifier("admin@admin.com");
                 setPassword("password");
               }}
               className="w-full py-2 mb-2 rounded-lg border border-border text-xs font-bold text-muted-foreground hover:bg-muted/30 hover:text-foreground transition-colors"
             >
-              Demo Admin Account
+              Demo Admin Account (admin00)
             </button>
           </div>
 

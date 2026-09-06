@@ -4,6 +4,133 @@ import { sendAiMessage } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import styles from "./AiChat.module.css";
 
+function stripThinking(text) {
+  if (!text || typeof text !== "string") return "";
+  return text
+    .replace(/<think>[\s\S]*?<\/think>/gi, "")
+    .replace(/<thought>[\s\S]*?<\/thought>/gi, "")
+    .replace(/<think>[\s\S]*/gi, "")
+    .trim();
+}
+
+function renderInline(text) {
+  if (!text) return null;
+  const regex = /(\*\*[^*]+\*\*|`[^`]+`|\*[^*]+\*)/g;
+  const parts = [];
+  let lastIndex = 0;
+  let match;
+
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.substring(lastIndex, match.index));
+    }
+    const token = match[0];
+    if (token.startsWith("**") && token.endsWith("**")) {
+      parts.push(<strong key={match.index}>{token.slice(2, -2)}</strong>);
+    } else if (token.startsWith("`") && token.endsWith("`")) {
+      parts.push(
+        <code key={match.index} className={styles.inlineCode}>
+          {token.slice(1, -1)}
+        </code>
+      );
+    } else if (token.startsWith("*") && token.endsWith("*")) {
+      parts.push(<em key={match.index}>{token.slice(1, -1)}</em>);
+    }
+    lastIndex = regex.lastIndex;
+  }
+
+  if (lastIndex < text.length) {
+    parts.push(text.substring(lastIndex));
+  }
+
+  return parts.length > 0 ? parts : text;
+}
+
+function FormattedMessage({ text }) {
+  const clean = stripThinking(text);
+  if (!clean) return null;
+
+  const rawLines = clean.split("\n");
+  const elements = [];
+  let currentList = null;
+  let currentParagraph = [];
+
+  const flushParagraph = () => {
+    if (currentParagraph.length > 0) {
+      elements.push(
+        <p key={`p-${elements.length}`} className={styles.chatParagraph}>
+          {currentParagraph.map((line, idx) => (
+            <React.Fragment key={idx}>
+              {idx > 0 && <br />}
+              {renderInline(line)}
+            </React.Fragment>
+          ))}
+        </p>
+      );
+      currentParagraph = [];
+    }
+  };
+
+  const flushList = () => {
+    if (currentList) {
+      if (currentList.type === "ul") {
+        elements.push(
+          <ul key={`ul-${elements.length}`} className={styles.chatList}>
+            {currentList.items.map((item, idx) => (
+              <li key={idx}>{renderInline(item)}</li>
+            ))}
+          </ul>
+        );
+      } else {
+        elements.push(
+          <ol key={`ol-${elements.length}`} className={styles.chatOrderedList}>
+            {currentList.items.map((item, idx) => (
+              <li key={idx}>{renderInline(item)}</li>
+            ))}
+          </ol>
+        );
+      }
+      currentList = null;
+    }
+  };
+
+  for (let i = 0; i < rawLines.length; i++) {
+    const trimmed = rawLines[i].trim();
+    if (!trimmed) {
+      flushParagraph();
+      flushList();
+      continue;
+    }
+
+    const bulletMatch = trimmed.match(/^[-*•]\s+(.*)$/);
+    const numberMatch = trimmed.match(/^\d+\.\s+(.*)$/);
+
+    if (bulletMatch) {
+      flushParagraph();
+      if (!currentList || currentList.type !== "ul") {
+        flushList();
+        currentList = { type: "ul", items: [] };
+      }
+      currentList.items.push(bulletMatch[1]);
+    } else if (numberMatch) {
+      flushParagraph();
+      if (!currentList || currentList.type !== "ol") {
+        flushList();
+        currentList = { type: "ol", items: [] };
+      }
+      currentList.items.push(numberMatch[1]);
+    } else {
+      flushList();
+      currentParagraph.push(trimmed);
+    }
+  }
+
+  flushParagraph();
+  flushList();
+
+  return <div className={styles.formattedContent}>{elements}</div>;
+}
+
 export function AiChat({ isOpen, onClose }) {
   const [messages, setMessages] = useState([
     { role: "assistant", text: "Hi! How can I help you with your HR info today?" },
@@ -119,7 +246,7 @@ export function AiChat({ isOpen, onClose }) {
                 msg.isError && "bg-destructive/10 text-destructive border border-destructive/20"
               )}
             >
-              {msg.text}
+              <FormattedMessage text={msg.text} />
             </div>
           </div>
         ))}

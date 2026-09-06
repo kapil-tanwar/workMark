@@ -18,3 +18,12 @@ export function emitChange() {
     window.dispatchEvent(new CustomEvent("wf:change"));
   }
 }
+
+export function clearCache() {
+  cache.users = [];
+  cache.attendance = [];
+  cache.leaves = [];
+  cache.compOffRequests = [];
+  cache.settings = { ...DEFAULT_SETTINGS };
+  emitChange();
+}

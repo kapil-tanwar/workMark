@@ -30,6 +30,18 @@ export default function ForgotPage() {
 
   async function handleResetPassword(e) {
     e.preventDefault();
+    const normId = identifier.trim().toLowerCase();
+    if (
+      normId === "admin@admin.com" ||
+      normId === "employee@employee.com" ||
+      normId === "admin00" ||
+      normId === "employee00" ||
+      normId === "admin11111@demo.com" ||
+      normId === "employee@demo.com"
+    ) {
+      toast.error("Password reset is disabled for demo accounts");
+      return;
+    }
     if (!otp || !newPassword) { toast.error("Please fill in all fields"); return; }
     setLoading(true);
     try {

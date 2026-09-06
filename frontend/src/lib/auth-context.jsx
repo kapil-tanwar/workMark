@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { validateEmployeeId } from "./auth-helpers";
 import * as api from "@/lib/api";
-import { refreshStore } from "@/lib/store";
+import { refreshStore, clearCache } from "@/lib/store";
 
 const AuthContext = createContext(null);
 
@@ -11,6 +11,7 @@ export function AuthProvider({ children }) {
 
   const refresh = async () => {
     if (!api.getToken()) {
+      clearCache();
       setUser(null);
       localStorage.removeItem("wf_user");
       return;
@@ -22,6 +23,7 @@ export function AuthProvider({ children }) {
       await refreshStore(u);
     } catch {
       api.setToken(null);
+      clearCache();
       setUser(null);
       localStorage.removeItem("wf_user");
     }
@@ -37,6 +39,7 @@ export function AuthProvider({ children }) {
       loading,
       refresh,
       login: async (identifier, password) => {
+        clearCache();
         const { user: u } = await api.login(identifier, password);
         setUser(u);
         localStorage.setItem("wf_user", JSON.stringify(u));
@@ -54,6 +57,7 @@ export function AuthProvider({ children }) {
           phone: input.phone.trim(),
         });
         if (result.pending) return result;
+        clearCache();
         const u = result.user;
         setUser(u);
         localStorage.setItem("wf_user", JSON.stringify(u));
@@ -62,6 +66,7 @@ export function AuthProvider({ children }) {
       },
       logout: () => {
         api.setToken(null);
+        clearCache();
         setUser(null);
         localStorage.removeItem("wf_user");
       },

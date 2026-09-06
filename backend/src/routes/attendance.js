@@ -3,7 +3,7 @@ import Attendance from "../models/Attendance.js";
 import Leave from "../models/Leave.js";
 import User from "../models/User.js";
 import Settings from "../models/Settings.js";
-import { authRequired } from "../middleware/auth.js";
+import { authRequired, isDemoUser } from "../middleware/auth.js";
 import { computeLeaveBalance } from "../utils/leaveBalance.js";
 import { ensureEarnedAccrualUpToDate } from "../utils/earnedAccrual.js";
 import { getISTDateStr, getISTTimeStr } from "../utils/timezone.js";
@@ -25,15 +25,27 @@ const nowHHmm = () => getISTTimeStr();
 router.get("/", async (req, res, next) => {
   try {
     const { userId, from, to } = req.query;
+    const isDemo = isDemoUser(req.user);
     const q = {};
-    if (req.user.role !== "admin") q.user = req.user._id;
-    else if (userId) q.user = userId;
+    if (req.user.role !== "admin") {
+      q.user = req.user._id;
+    } else {
+      const userFilter = isDemo ? { isDummy: true } : { isDummy: { $ne: true } };
+      if (userId) {
+        userFilter._id = userId;
+      }
+      const scopedUsers = await User.find(userFilter).select("_id");
+      const scopedIds = scopedUsers.map((u) => u._id);
+      q.user = { $in: scopedIds };
+    }
     if (from || to) {
       q.date = {};
       if (from) q.date.$gte = String(from);
       if (to) q.date.$lte = String(to);
     }
-    const records = await Attendance.find(q).populate("user", "name email employeeId department").sort({ date: -1 });
+    const records = await Attendance.find(q)
+      .populate("user", "name email employeeId department isDummy")
+      .sort({ date: -1 });
     res.json({ records });
   } catch (e) { next(e); }
 });
@@ -102,6 +114,17 @@ router.get("/summary/:userId", async (req, res, next) => {
     if (req.user.role !== "admin" && String(req.user._id) !== userId)
       return next({ status: 403, message: "Forbidden" });
 
+    const user = await User.findById(userId);
+    if (!user) return next({ status: 404, message: "User not found" });
+
+    if (req.user.role === "admin") {
+      const isDemo = isDemoUser(req.user);
+      const isTargetDemo = isDemoUser(user);
+      if (isDemo !== isTargetDemo) {
+        return next({ status: 404, message: "User not found" });
+      }
+    }
+
     const ym = new Date().toISOString().slice(0, 7);
     const recs = await Attendance.find({ user: userId, date: { $regex: `^${ym}` } });
     const counts = {
@@ -112,7 +135,6 @@ router.get("/summary/:userId", async (req, res, next) => {
     };
 
     await ensureEarnedAccrualUpToDate();
-    const user = await User.findById(userId);
     const leaves = await Leave.find({ user: userId });
     const leaveBalance = computeLeaveBalance(user, leaves, { includePending: false });
 

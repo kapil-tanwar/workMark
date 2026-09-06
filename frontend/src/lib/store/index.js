@@ -1,8 +1,10 @@
 import * as api from "@/lib/api";
 import { computeLeaveBalance, canRequestLeave } from "@/lib/utils/leave-balance";
-import { cache, emitChange } from "./cache";
+import { cache, emitChange, clearCache } from "./cache";
 import { normAttendance, normLeave, normCompOff } from "./normalizers";
 import { getSavedUser } from "@/lib/auth-helpers";
+
+export { clearCache };
 
 export const store = {
   getUsers: () => cache.users,

@@ -1,7 +1,8 @@
 import { Router } from "express";
 import Attendance from "../models/Attendance.js";
 import Leave from "../models/Leave.js";
-import { authRequired, adminOnly } from "../middleware/auth.js";
+import User from "../models/User.js";
+import { authRequired, adminOnly, isDemoUser } from "../middleware/auth.js";
 
 const router = Router();
 router.use(authRequired, adminOnly);
@@ -10,7 +11,12 @@ router.use(authRequired, adminOnly);
 router.get("/attendance", async (req, res, next) => {
   try {
     const { from, to } = req.query;
-    const q = {};
+    const isDemo = isDemoUser(req.user);
+    const userFilter = isDemo ? { isDummy: true } : { isDummy: { $ne: true } };
+    const scopedUsers = await User.find(userFilter).select("_id");
+    const scopedIds = scopedUsers.map((u) => u._id);
+
+    const q = { user: { $in: scopedIds } };
     if (from || to) {
       q.date = {};
       if (from) q.date.$gte = String(from);
@@ -26,7 +32,12 @@ router.get("/attendance", async (req, res, next) => {
 router.get("/leaves", async (req, res, next) => {
   try {
     const { from, to } = req.query;
-    const q = {};
+    const isDemo = isDemoUser(req.user);
+    const userFilter = isDemo ? { isDummy: true } : { isDummy: { $ne: true } };
+    const scopedUsers = await User.find(userFilter).select("_id");
+    const scopedIds = scopedUsers.map((u) => u._id);
+
+    const q = { user: { $in: scopedIds } };
     if (from) q.startDate = { $gte: String(from) };
     if (to) q.endDate = { ...(q.endDate || {}), $lte: String(to) };
     const leaves = await Leave.find(q).populate("user", "name email employeeId department");

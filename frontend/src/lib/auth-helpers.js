@@ -43,3 +43,19 @@ export function getSavedUser() {
         return null;
     }
 }
+
+export function isDemoUser(user) {
+    if (!user) return false;
+    if (user.isDummy) return true;
+    const email = (user.email || "").toLowerCase();
+    const empId = (user.employeeId || "").toUpperCase();
+    return (
+        email === "admin@admin.com" ||
+        email === "employee@employee.com" ||
+        email === "admin11111@demo.com" ||
+        email === "employee@demo.com" ||
+        empId === "ADMIN00" ||
+        empId === "EMPLOYEE00"
+    );
+}
+

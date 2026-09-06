@@ -31,6 +31,7 @@ const UserSchema = new mongoose.Schema(
       enum: ["approved", "pending", "rejected"],
       default: "approved",
     },
+    isDummy: { type: Boolean, default: false },
     leaveBalances: { type: LeaveBalancesSchema, default: () => ({}) },
     pendingTotpSecret: { type: String },
     totpSecret: { type: String },

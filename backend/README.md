@@ -21,9 +21,10 @@ MONGODB_URI=mongodb://127.0.0.1:27017/attend_easy
 
 Install [MongoDB Community Server](https://www.mongodb.com/try/download/community) and ensure it is running before starting the API.
 
-## Default admin (after seeding)
+## Default Demo Accounts (Auto-seeded)
 
-- Admin: `admin@demo.com` / `password`
+- Admin: `admin@admin.com` (ID: `admin00`) / `password`
+- Employee: `employee@employee.com` (ID: `employee00`) / `password`
 
 Employees can be added via signup or the admin Employees page in the frontend.
 
