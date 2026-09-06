@@ -1,5 +1,6 @@
 import Notification from "../models/Notification.js";
 import User from "../models/User.js";
+import { isDemoUser } from "../middleware/auth.js";
 
 // Send a notification to a specific user
 export async function notifyUser(userId, title, message, type = "system", relatedId = null) {
@@ -16,16 +17,20 @@ export async function notifyUser(userId, title, message, type = "system", relate
   }
 }
 
-// Send a notification to all active, approved admins
-
+// Send a notification to all active, approved, NON-DEMO admins
 export async function notifyAdmins(title, message, type = "admin", relatedId = null) {
   try {
     const admins = await User.find({
       role: "admin",
       active: true,
+      isDummy: { $ne: true },  // exclude seeded demo accounts
       $or: [{ approvalStatus: "approved" }, { approvalStatus: { $exists: false } }],
-    }).select("_id");
-    const notifications = admins.map((admin) => ({
+    }).select("_id email employeeId");
+
+    // Extra safety: filter out any that match the isDemoUser logic (legacy emails)
+    const realAdmins = admins.filter((a) => !isDemoUser(a));
+
+    const notifications = realAdmins.map((admin) => ({
       recipient: admin._id,
       title,
       message,
@@ -39,3 +44,4 @@ export async function notifyAdmins(title, message, type = "admin", relatedId = n
     console.error("Failed to create admin notifications:", err);
   }
 }
+

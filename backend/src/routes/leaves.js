@@ -2,7 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import Leave from "../models/Leave.js";
 import User from "../models/User.js";
-import { authRequired, adminOnly } from "../middleware/auth.js";
+import { authRequired, adminOnly, isDemoUser } from "../middleware/auth.js";
 import { canRequestLeave, computeLeaveBalance } from "../utils/leaveBalance.js";
 import { syncApprovedLeaveAttendance } from "../utils/syncLeaveAttendance.js";
 import { ensureEarnedAccrualUpToDate } from "../utils/earnedAccrual.js";
@@ -23,16 +23,28 @@ router.get("/balance", async (req, res, next) => {
   }
 });
 
-// gets a list of leave requests. admins see everyone's, employees only see their own
+// gets a list of leave requests. admins see everyone's (scoped to demo or real), employees only see their own
 router.get("/", async (req, res, next) => {
   try {
     await ensureEarnedAccrualUpToDate();
     const { userId, status } = req.query;
+    const isDemo = isDemoUser(req.user);
     const q = {};
-    if (req.user.role !== "admin") q.user = req.user._id;
-    else if (userId) q.user = userId;
+    if (req.user.role !== "admin") {
+      q.user = req.user._id;
+    } else {
+      const userFilter = isDemo ? { isDummy: true } : { isDummy: { $ne: true } };
+      if (userId) {
+        userFilter._id = userId;
+      }
+      const scopedUsers = await User.find(userFilter).select("_id");
+      const scopedIds = scopedUsers.map((u) => u._id);
+      q.user = { $in: scopedIds };
+    }
     if (status) q.status = status;
-    const leaves = await Leave.find(q).populate("user", "name email employeeId department").sort({ createdAt: -1 });
+    const leaves = await Leave.find(q)
+      .populate("user", "name email employeeId department isDummy")
+      .sort({ createdAt: -1 });
     res.json({ leaves });
   } catch (e) {
     next(e);
@@ -77,8 +89,10 @@ router.post("/", async (req, res, next) => {
     if (!check.ok) return next({ status: 400, message: check.message });
     const leave = await Leave.create({ ...data, user: req.user._id });
     
-    // Notify admins
-    await notifyAdmins("New Leave Request", `${req.user.name} has requested ${data.type} from ${data.startDate} to ${data.endDate}.`, "leave", leave._id);
+    // Notify admins only for real accounts (exclude demo accounts from sending alerts to real admins)
+    if (!isDemoUser(req.user)) {
+      await notifyAdmins("New Leave Request", `${req.user.name} has requested ${data.type} from ${data.startDate} to ${data.endDate}.`, "leave", leave._id);
+    }
 
     res.status(201).json({ leave });
   } catch (e) {
@@ -89,12 +103,19 @@ router.post("/", async (req, res, next) => {
 // admin : approves the leave 
 router.patch("/:id/approve", adminOnly, async (req, res, next) => {
   try {
-    const existing = await Leave.findById(req.params.id);
+    const existing = await Leave.findById(req.params.id).populate("user");
     if (!existing) return next({ status: 404, message: "Not found" });
     if (existing.status !== "Pending") return next({ status: 400, message: "Leave is not pending" });
 
+    // Isolation check: demo admin can only approve dummy leaves; real admin can only approve real leaves
+    const isDemo = isDemoUser(req.user);
+    const isTargetDemo = isDemoUser(existing.user);
+    if (isDemo !== isTargetDemo) {
+      return next({ status: 403, message: "Access denied. Cross-environment approval is prohibited." });
+    }
+
     const check = await validateLeaveRequest(
-      existing.user,
+      existing.user._id,
       existing.type,
       existing.startDate,
       existing.endDate,
@@ -122,12 +143,21 @@ router.patch("/:id/approve", adminOnly, async (req, res, next) => {
 // admin reject leave request
 router.patch("/:id/reject", adminOnly, async (req, res, next) => {
   try {
+    const existing = await Leave.findById(req.params.id).populate("user");
+    if (!existing) return next({ status: 404, message: "Not found" });
+
+    // Isolation check: demo admin can only reject dummy leaves; real admin can only reject real leaves
+    const isDemo = isDemoUser(req.user);
+    const isTargetDemo = isDemoUser(existing.user);
+    if (isDemo !== isTargetDemo) {
+      return next({ status: 403, message: "Access denied. Cross-environment action is prohibited." });
+    }
+
     const leave = await Leave.findByIdAndUpdate(
       req.params.id,
       { status: "Rejected", decidedBy: req.user._id, decidedAt: new Date() },
       { new: true }
     ).populate("user", "name");
-    if (!leave) return next({ status: 404, message: "Not found" });
 
     // Notify user
     await notifyUser(leave.user._id, "Leave Rejected", `Your ${leave.type} from ${leave.startDate} to ${leave.endDate} has been rejected.`, "leave", leave._id);
@@ -141,11 +171,20 @@ router.patch("/:id/reject", adminOnly, async (req, res, next) => {
 // deletes a leave request.
 router.delete("/:id", async (req, res, next) => {
   try {
-    const leave = await Leave.findById(req.params.id);
+    const leave = await Leave.findById(req.params.id).populate("user");
     if (!leave) return next({ status: 404, message: "Not found" });
-    const owns = String(leave.user) === String(req.user._id);
-    if (!(req.user.role === "admin" || (owns && leave.status === "Pending")))
+    const owns = String(leave.user._id || leave.user) === String(req.user._id);
+
+    if (req.user.role === "admin") {
+      const isDemo = isDemoUser(req.user);
+      const isTargetDemo = isDemoUser(leave.user);
+      if (isDemo !== isTargetDemo) {
+        return next({ status: 403, message: "Access denied. Cross-environment action is prohibited." });
+      }
+    } else if (!(owns && leave.status === "Pending")) {
       return next({ status: 403, message: "Forbidden" });
+    }
+
     await leave.deleteOne();
     res.json({ ok: true });
   } catch (e) {

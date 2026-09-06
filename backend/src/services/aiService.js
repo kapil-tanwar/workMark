@@ -5,9 +5,21 @@ import Attendance from "../models/Attendance.js";
 import { computeLeaveBalance, canRequestLeave } from "../utils/leaveBalance.js";
 import { ensureEarnedAccrualUpToDate } from "../utils/earnedAccrual.js";
 
-/* ── Groq client ── */
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-const MODEL = process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
+/* ── Groq client (lazy — so missing API key doesn't crash the route on import) ── */
+let _groq = null;
+let _model = null;
+function getGroq() {
+  const model = process.env.GROQ_MODEL || "qwen/qwen3.6-27b";
+  // Re-create client if model changed (e.g. after .env update + nodemon restart)
+  if (!_groq || _model !== model) {
+    if (!process.env.GROQ_API_KEY) {
+      throw new Error("GROQ_API_KEY is not set in backend/.env");
+    }
+    _groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+    _model = model;
+  }
+  return { groq: _groq, model: _model };
+}
 
 /* ────────────────── Tool definitions ────────────────── */
 const tools = [
@@ -227,14 +239,26 @@ const toolMap = {
   checkLeaveAvailability,
 };
 
+/* ── Helper to strip internal reasoning tags (<think>...</think>) ── */
+function cleanAiResponse(text) {
+  if (!text || typeof text !== "string") return "";
+  let cleaned = text
+    .replace(/<think>[\s\S]*?<\/think>/gi, "")
+    .replace(/<thought>[\s\S]*?<\/thought>/gi, "")
+    .replace(/<think>[\s\S]*/gi, "")
+    .trim();
+  return cleaned;
+}
+
 /* ────────────────── Main handler ────────────────── */
 const SYSTEM_PROMPT = `You are the WorkFlow HR AI Assistant. You help employees with their HR queries — leave balance, attendance, leave history, late arrivals, and leave availability.
 
 Rules:
-- Be friendly, concise, and helpful.
+- Be friendly, professional, clear, and concise.
+- NEVER output internal reasoning, thought scratchpads, or <think>...</think> tags. Output only the final response for the user.
 - Always use the provided tools to fetch real data. Never invent numbers.
+- Format responses cleanly with bold highlights for key numbers/dates, and bullet points for lists.
 - If the user asks something outside HR scope, politely say you can only help with HR-related queries.
-- Format numbers clearly. Use natural language for responses.
 - When referring to leave types, use "Earned Leave" and "Comp-Off Leave".
 - When a month isn't specified, assume the current month.
 - When a year isn't specified, assume the current year.`;
@@ -249,8 +273,9 @@ export async function handleAiMessage(userMessage, user) {
   ];
 
   // Step 1: Send message + tool definitions to Groq
+  const { groq, model } = getGroq();
   const response = await groq.chat.completions.create({
-    model: MODEL,
+    model,
     messages,
     tools,
     tool_choice: "auto",
@@ -262,7 +287,8 @@ export async function handleAiMessage(userMessage, user) {
 
   // If no tool call, return directly
   if (!assistantMsg.tool_calls || assistantMsg.tool_calls.length === 0) {
-    return assistantMsg.content || "I'm not sure how to help with that. Try asking about your leaves, attendance, or late arrivals.";
+    const raw = assistantMsg.content || "";
+    return cleanAiResponse(raw) || "I'm not sure how to help with that. Try asking about your leaves, attendance, or late arrivals.";
   }
 
   // Step 2: Execute all tool calls
@@ -319,14 +345,16 @@ export async function handleAiMessage(userMessage, user) {
 
   // Step 3: Let the model generate a natural-language response from the tool results
   const finalResponse = await groq.chat.completions.create({
-    model: MODEL,
+    model,
     messages,
-    temperature: 0.4,
+    temperature: 0.3,
     max_tokens: 1024,
   });
 
+  const finalRaw = finalResponse.choices[0].message.content || "";
+  const cleaned = cleanAiResponse(finalRaw);
   return (
-    finalResponse.choices[0].message.content ||
+    cleaned ||
     "Sorry, I could not generate a response. Please try again."
   );
 }

@@ -7,7 +7,7 @@ import qrcode from "qrcode";
 
 authenticator.options = { window: [2, 2] };
 import User from "../models/User.js";
-import { authRequired } from "../middleware/auth.js";
+import { authRequired, isDemoUser } from "../middleware/auth.js";
 import { creditNewEmployeeEarnedLeave } from "../utils/earnedAccrual.js";
 import { notifyAdmins } from "../services/notification.js";
 
@@ -88,7 +88,13 @@ router.post("/signup", async (req, res, next) => {
 
     let approvalStatus = "approved";
     if (data.role === "admin") {
-      const adminCount = await User.countDocuments({ role: "admin" });
+      // Only count real (non-demo) approved admins to determine if approval is needed.
+      // Demo accounts are always present but should never gate real admin signup.
+      const adminCount = await User.countDocuments({
+        role: "admin",
+        isDummy: { $ne: true },
+        approvalStatus: "approved",
+      });
       if (adminCount > 0) {
         approvalStatus = "pending";
       }
@@ -134,7 +140,7 @@ router.post("/login", async (req, res, next) => {
       .object({ email: z.string().min(1), password: z.string().min(1) })
       .parse(req.body);
     const identifier = email.trim();
-    const user = await User.findOne({
+    let user = await User.findOne({
       $or: [
         ...(identifier.includes("@")
           ? [{ email: identifier.toLowerCase() }]
@@ -142,6 +148,24 @@ router.post("/login", async (req, res, next) => {
         { employeeId: normalizeEmployeeId(identifier) },
       ],
     });
+
+    const isPrimaryDemoIdentifier =
+      identifier.toLowerCase() === "employee@employee.com" ||
+      normalizeEmployeeId(identifier) === "EMPLOYEE00" ||
+      identifier.toLowerCase() === "admin@admin.com" ||
+      normalizeEmployeeId(identifier) === "ADMIN00";
+
+    if (isPrimaryDemoIdentifier && (!user || !user.active)) {
+      const { ensureDemoUsers } = await import("../utils/seedDemo.js");
+      await ensureDemoUsers();
+      user = await User.findOne({
+        $or: [
+          ...(identifier.includes("@") ? [{ email: identifier.toLowerCase() }] : []),
+          { employeeId: normalizeEmployeeId(identifier) },
+        ],
+      });
+    }
+
     if (!user) return next({ status: 401, message: "Invalid credentials" });
     if (user.approvalStatus === "pending") {
       return next({ status: 403, message: "Account pending admin approval." });
@@ -177,6 +201,9 @@ const profileSchema = z.object({
 
 router.patch("/profile", authRequired, async (req, res, next) => {
   try {
+    if (isDemoUser(req.user)) {
+      return next({ status: 403, message: "Profile editing is disabled for demo accounts." });
+    }
     const data = profileSchema.parse(req.body);
     const patch = {};
 
@@ -236,7 +263,21 @@ router.post("/forgot-password", async (req, res, next) => {
     }
 
     const user = await User.findOne(query);
-    if (!user || !user.is2faEnabled || !user.totpSecret) {
+    if (!user) {
+      return next({
+        status: 401,
+        message: "Invalid details or Authenticator code",
+      });
+    }
+
+    if (isDemoUser(user)) {
+      return next({
+        status: 403,
+        message: "Password reset is disabled for demo accounts.",
+      });
+    }
+
+    if (!user.is2faEnabled || !user.totpSecret) {
       return next({
         status: 401,
         message: "Invalid details or Authenticator code",
@@ -265,6 +306,9 @@ router.post("/forgot-password", async (req, res, next) => {
 
 router.post("/2fa/generate", authRequired, async (req, res, next) => {
   try {
+    if (isDemoUser(req.user)) {
+      return next({ status: 403, message: "2FA setup is disabled for demo accounts." });
+    }
     const secret = authenticator.generateSecret();
     const otpauth = authenticator.keyuri(
       req.user.email || req.user.employeeId,

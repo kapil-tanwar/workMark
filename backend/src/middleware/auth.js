@@ -20,6 +20,21 @@ export async function authRequired(req, _res, next) {
   }
 }
 
+export function isDemoUser(user) {
+  if (!user) return false;
+  if (user.isDummy) return true;
+  const email = (user.email || "").toLowerCase();
+  const empId = (user.employeeId || "").toUpperCase();
+  return (
+    email === "admin@admin.com" ||
+    email === "employee@employee.com" ||
+    email === "admin11111@demo.com" ||
+    email === "employee@demo.com" ||
+    empId === "ADMIN00" ||
+    empId === "EMPLOYEE00"
+  );
+}
+
 export function adminOnly(req, _res, next) {
   if (req.user?.role !== "admin")
     return next({ status: 403, message: "Admin only" });

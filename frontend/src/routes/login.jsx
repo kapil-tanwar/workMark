@@ -128,7 +128,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => {
-                  setIdentifier("admin@demo.com");
+                  setIdentifier("admin@admin.com");
                   setPassword("password");
                 }}
                 className="flex-1 py-2 rounded-lg border border-border text-xs font-bold text-muted-foreground hover:bg-muted/30 hover:text-foreground transition-colors"
@@ -138,7 +138,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => {
-                  setIdentifier("employee@demo.com");
+                  setIdentifier("employee@employee.com");
                   setPassword("password");
                 }}
                 className="flex-1 py-2 rounded-lg border border-border text-xs font-bold text-muted-foreground hover:bg-muted/30 hover:text-foreground transition-colors"

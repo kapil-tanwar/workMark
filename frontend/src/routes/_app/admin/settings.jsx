@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { forgotPassword, getAdminRequests, approveAdminRequest, rejectAdminRequest, generate2FA, verify2FA } from "@/lib/api";
+import { isDemoUser } from "@/lib/auth-helpers";
 
 
 
@@ -54,10 +55,12 @@ export default function SettingsPage() {
   });
 
   function openForgot() {
+    if (isDemoUser(user)) {
+      toast.error("Password reset is disabled for demo accounts");
+      return;
+    }
     setForgotIdentifier(user?.email || user?.employeeId || "");
     setForgotPhone(user?.phone || "");
-    setForgotOtp("");
-    setForgotNewPassword("");
     setForgotOtp("");
     setForgotNewPassword("");
     setForgotSuccess(false);
@@ -65,6 +68,10 @@ export default function SettingsPage() {
   }
 
   async function openSetup2fa() {
+    if (isDemoUser(user)) {
+      toast.error("2FA setup is disabled for demo accounts");
+      return;
+    }
     setSetup2faLoading(true);
     setSetup2faOpen(true);
     try {
@@ -110,6 +117,8 @@ export default function SettingsPage() {
   }
 
   async function loadRequests() {
+    // Demo admin is not part of the real approval workflow — skip fetching
+    if (isDemoUser(user)) return;
     setLoadingRequests(true);
     try {
       const data = await getAdminRequests();
@@ -130,6 +139,10 @@ export default function SettingsPage() {
   }, []);
 
   async function handleApprove(id) {
+    if (isDemoUser(user)) {
+      toast.error("Demo accounts cannot approve admin requests.");
+      return;
+    }
     try {
       await approveAdminRequest(id);
       toast.success("Admin request approved");
@@ -140,6 +153,10 @@ export default function SettingsPage() {
   }
 
   async function handleReject(id) {
+    if (isDemoUser(user)) {
+      toast.error("Demo accounts cannot reject admin requests.");
+      return;
+    }
     try {
       await rejectAdminRequest(id);
       toast.success("Admin request rejected");
@@ -150,6 +167,8 @@ export default function SettingsPage() {
   }
 
   if (!user) return null;
+
+  const isDemo = isDemoUser(user);
 
   function openEdit() {
     setProfileForm({
@@ -164,20 +183,22 @@ export default function SettingsPage() {
   }
 
   async function handleSave() {
-    if (!profileForm.name.trim() || !profileForm.phone.trim()) {
+    if (!isDemo && (!profileForm.name.trim() || !profileForm.phone.trim())) {
       toast.error("Profile name and phone are required");
       return;
     }
     setSaving(true);
     try {
-      await updateProfile({
-        name: profileForm.name.trim(), email: profileForm.email.trim(),
-        phone: profileForm.phone.trim(), department: profileForm.department.trim(),
-        designation: profileForm.designation.trim(),
-      });
+      if (!isDemo) {
+        await updateProfile({
+          name: profileForm.name.trim(), email: profileForm.email.trim(),
+          phone: profileForm.phone.trim(), department: profileForm.department.trim(),
+          designation: profileForm.designation.trim(),
+        });
+      }
       await store.setSettings(settingsForm);
       setS(settingsForm);
-      toast.success("Profile and Settings updated");
+      toast.success(isDemo ? "Company Settings updated (Admin profile is locked in demo mode)" : "Profile and Settings updated");
       setEditDialogOpen(false);
     } catch (err) {
       toast.error(err.message);
@@ -234,7 +255,14 @@ export default function SettingsPage() {
                 {initials}
               </div>
               <div className="pb-1">
-                <h3 className="font-headline text-2xl font-bold text-foreground">{user.name}</h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-headline text-2xl font-bold text-foreground">{user.name}</h3>
+                  {isDemo && (
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                      Demo Mode (Profile Locked)
+                    </span>
+                  )}
+                </div>
                 <p className="text-sm text-muted-foreground mt-0.5">
                   {user.designation || "Administrator"} · {user.department || "Administration"} (Admin Portal)
                 </p>
@@ -252,12 +280,19 @@ export default function SettingsPage() {
               </button>
               <button
                 onClick={openForgot}
-                className="flex-1 md:flex-initial flex items-center justify-center gap-2 border border-border bg-card text-foreground px-4 sm:px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-muted active:scale-95 transition-all whitespace-nowrap"
+                disabled={isDemo}
+                title={isDemo ? "Password reset is disabled for demo accounts" : "Reset password"}
+                className={cn(
+                  "flex-1 md:flex-initial flex items-center justify-center gap-2 border border-border px-4 sm:px-5 py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition-all",
+                  isDemo
+                    ? "bg-muted text-muted-foreground cursor-not-allowed opacity-60"
+                    : "bg-card text-foreground hover:bg-muted active:scale-95"
+                )}
               >
                 <KeyRound className="size-4" />
                 <span className="truncate">Reset password</span>
               </button>
-              {!user.is2faEnabled && (
+              {!user.is2faEnabled && !isDemo && (
                 <button
                   onClick={openSetup2fa}
                   className="flex-1 md:flex-initial flex items-center justify-center gap-2 border border-border bg-card text-foreground px-4 sm:px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-muted active:scale-95 transition-all whitespace-nowrap"
@@ -328,32 +363,34 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* ── Admin Requests Section ── */}
-      <div className="bg-card border border-border/40 rounded-2xl overflow-hidden card-shadow p-6 sm:p-8 space-y-6">
-        <h4 className="font-headline text-lg font-bold text-foreground border-b border-border/40 pb-3">
-          Pending Admin Approvals
-        </h4>
-        {loadingRequests ? (
-          <div className="flex justify-center p-4"><Loader2 className="size-6 animate-spin text-muted-foreground" /></div>
-        ) : requests.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No pending admin requests.</p>
-        ) : (
-          <div className="space-y-4">
-            {requests.map(req => (
-              <div key={req._id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-muted/30 border border-border/30">
-                <div>
-                  <p className="font-bold text-foreground">{req.name} <span className="text-muted-foreground text-xs font-normal">({req.employeeId})</span></p>
-                  <p className="text-xs text-muted-foreground mt-0.5">{req.email || "No email"} · {req.phone}</p>
+      {/* ── Admin Requests Section (Hidden in Demo mode) ── */}
+      {!isDemo && (
+        <div className="bg-card border border-border/40 rounded-2xl overflow-hidden card-shadow p-6 sm:p-8 space-y-6">
+          <h4 className="font-headline text-lg font-bold text-foreground border-b border-border/40 pb-3">
+            Pending Admin Approvals
+          </h4>
+          {loadingRequests ? (
+            <div className="flex justify-center p-4"><Loader2 className="size-6 animate-spin text-muted-foreground" /></div>
+          ) : requests.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No pending admin requests.</p>
+          ) : (
+            <div className="space-y-4">
+              {requests.map(req => (
+                <div key={req._id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-muted/30 border border-border/30">
+                  <div>
+                    <p className="font-bold text-foreground">{req.name} <span className="text-muted-foreground text-xs font-normal">({req.employeeId})</span></p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{req.email || "No email"} · {req.phone}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={() => handleReject(req._id)} className="h-9 px-4 rounded-lg font-semibold border-border hover:bg-destructive/10 hover:text-destructive">Reject</Button>
+                    <Button size="sm" onClick={() => handleApprove(req._id)} className="h-9 px-4 rounded-lg font-semibold bg-primary text-primary-foreground hover:opacity-90">Approve</Button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" onClick={() => handleReject(req._id)} className="h-9 px-4 rounded-lg font-semibold border-border hover:bg-destructive/10 hover:text-destructive">Reject</Button>
-                  <Button size="sm" onClick={() => handleApprove(req._id)} className="h-9 px-4 rounded-lg font-semibold bg-primary text-primary-foreground hover:opacity-90">Approve</Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Footer */}
       <div className="pt-4 pb-2 border-t border-border/30 text-center">
@@ -375,11 +412,18 @@ export default function SettingsPage() {
           <div className="flex-1 overflow-y-auto p-6 sm:p-8 space-y-10">
             {/* Admin Profile */}
             <div className="space-y-6">
-              <div className="flex items-center gap-3 border-b border-border/50 pb-3">
-                <div className="size-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <div className="flex items-center justify-between border-b border-border/50 pb-3">
+                <div className="flex items-center gap-3">
+                  <div className="size-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  </div>
+                  <h3 className="text-base font-semibold text-foreground">Admin Personal Profile</h3>
                 </div>
-                <h3 className="text-base font-semibold text-foreground">Admin Personal Profile</h3>
+                {isDemo && (
+                  <span className="text-xs font-semibold text-amber-500 bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/20">
+                    Locked in Demo Mode
+                  </span>
+                )}
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2 md:col-span-2">
@@ -388,34 +432,34 @@ export default function SettingsPage() {
                 </div>
                 <div className="space-y-2 md:col-span-2">
                   <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Full Name</Label>
-                  <Input value={profileForm.name} onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })} className="h-12 bg-card border-border rounded-xl focus-visible:ring-primary focus-visible:border-primary shadow-sm" />
+                  <Input value={profileForm.name} disabled={isDemo} onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })} className={cn("h-12 bg-card border-border rounded-xl focus-visible:ring-primary focus-visible:border-primary shadow-sm", isDemo && "opacity-60 bg-muted/50")} />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Email</Label>
                   <div className="relative">
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                    <Input type="email" value={profileForm.email} onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })} className="h-12 pl-11 bg-card border-border rounded-xl focus-visible:ring-primary shadow-sm" />
+                    <Input type="email" value={profileForm.email} disabled={isDemo} onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })} className={cn("h-12 pl-11 bg-card border-border rounded-xl focus-visible:ring-primary shadow-sm", isDemo && "opacity-60 bg-muted/50")} />
                   </div>
                 </div>
                 <div className="space-y-2">
                   <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Phone</Label>
                   <div className="relative">
                     <Phone className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                    <Input value={profileForm.phone} onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })} className="h-12 pl-11 bg-card border-border rounded-xl focus-visible:ring-primary shadow-sm" />
+                    <Input value={profileForm.phone} disabled={isDemo} onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })} className={cn("h-12 pl-11 bg-card border-border rounded-xl focus-visible:ring-primary shadow-sm", isDemo && "opacity-60 bg-muted/50")} />
                   </div>
                 </div>
                 <div className="space-y-2">
                   <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Department</Label>
                   <div className="relative">
                     <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                    <Input value={profileForm.department} onChange={(e) => setProfileForm({ ...profileForm, department: e.target.value })} className="h-12 pl-11 bg-card border-border rounded-xl focus-visible:ring-primary shadow-sm" />
+                    <Input value={profileForm.department} disabled={isDemo} onChange={(e) => setProfileForm({ ...profileForm, department: e.target.value })} className={cn("h-12 pl-11 bg-card border-border rounded-xl focus-visible:ring-primary shadow-sm", isDemo && "opacity-60 bg-muted/50")} />
                   </div>
                 </div>
                 <div className="space-y-2">
                   <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Designation</Label>
                   <div className="relative">
                     <BadgeCheck className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                    <Input value={profileForm.designation} onChange={(e) => setProfileForm({ ...profileForm, designation: e.target.value })} className="h-12 pl-11 bg-card border-border rounded-xl focus-visible:ring-primary shadow-sm" />
+                    <Input value={profileForm.designation} disabled={isDemo} onChange={(e) => setProfileForm({ ...profileForm, designation: e.target.value })} className={cn("h-12 pl-11 bg-card border-border rounded-xl focus-visible:ring-primary shadow-sm", isDemo && "opacity-60 bg-muted/50")} />
                   </div>
                 </div>
               </div>

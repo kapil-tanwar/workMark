@@ -87,8 +87,8 @@ npm run dev       # Starts Vite dev server at http://localhost:8080
 Open [http://localhost:8080](http://localhost:8080) in your browser.
 
 ### Default Seeded Credentials
-- **Admin**: `admin@demo.com` / `password`
-- **Employee**: `employee@demo.com` / `password`
+- **Admin**: `admin@admin.com` (ID: `admin00`) / `password`
+- **Employee**: `employee@employee.com` (ID: `employee00`) / `password`
 
 ---
 

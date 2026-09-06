@@ -13,6 +13,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { forgotPassword, generate2FA, verify2FA } from "@/lib/api";
+import { isDemoUser } from "@/lib/auth-helpers";
 
 
 
@@ -98,9 +99,14 @@ export default function ProfilePage() {
 
   if (!user) return null;
 
+  const isDemo = isDemoUser(user);
   const initials = user.name.split(" ").map((s) => s[0]).slice(0, 2).join("").toUpperCase();
 
   function openEdit() {
+    if (isDemo) {
+      toast.error("Profile editing is disabled for demo accounts");
+      return;
+    }
     setForm({
       name: user.name || "", email: user.email || "", phone: user.phone || "",
       department: user.department || "", designation: user.designation || "",
@@ -110,6 +116,10 @@ export default function ProfilePage() {
   }
 
   async function handleSave() {
+    if (isDemo) {
+      toast.error("Profile editing is disabled for demo accounts");
+      return;
+    }
     if (!form.name.trim() || !form.phone.trim()) {
       toast.error("Name and phone are required");
       return;
@@ -161,7 +171,14 @@ export default function ProfilePage() {
                 {initials}
               </div>
               <div className="pb-1">
-                <h3 className="font-headline text-2xl font-bold text-foreground">{user.name}</h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-headline text-2xl font-bold text-foreground">{user.name}</h3>
+                  {isDemo && (
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                      Demo Mode (Read-Only)
+                    </span>
+                  )}
+                </div>
                 <p className="text-sm text-muted-foreground mt-0.5">
                   {user.designation || "Employee"} · {user.department || "—"}
                 </p>
@@ -171,19 +188,33 @@ export default function ProfilePage() {
             <div className="flex flex-row gap-2 w-full md:w-auto shrink-0 mb-1">
               <button
                 onClick={openEdit}
-                className="flex-1 md:flex-initial flex items-center justify-center gap-2 bg-primary text-primary-foreground px-4 sm:px-5 py-2.5 rounded-xl text-sm font-bold hover:opacity-90 active:scale-95 transition-all shadow-md shadow-primary/20 whitespace-nowrap"
+                disabled={isDemo}
+                title={isDemo ? "Profile editing is disabled for demo accounts" : "Edit profile"}
+                className={cn(
+                  "flex-1 md:flex-initial flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap transition-all",
+                  isDemo
+                    ? "bg-muted text-muted-foreground cursor-not-allowed opacity-60 border border-border"
+                    : "bg-primary text-primary-foreground hover:opacity-90 active:scale-95 shadow-md shadow-primary/20"
+                )}
               >
                 <Pencil className="size-4" />
                 <span className="truncate">Edit profile</span>
               </button>
               <button
                 onClick={openForgot}
-                className="flex-1 md:flex-initial flex items-center justify-center gap-2 border border-border bg-card text-foreground px-4 sm:px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-muted active:scale-95 transition-all whitespace-nowrap"
+                disabled={isDemo}
+                title={isDemo ? "Password reset is disabled for demo accounts" : "Reset password"}
+                className={cn(
+                  "flex-1 md:flex-initial flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition-all border border-border",
+                  isDemo
+                    ? "bg-muted text-muted-foreground cursor-not-allowed opacity-60"
+                    : "bg-card text-foreground hover:bg-muted active:scale-95"
+                )}
               >
                 <KeyRound className="size-4" />
                 <span className="truncate">Reset password</span>
               </button>
-              {!user.is2faEnabled && (
+              {!user.is2faEnabled && !isDemo && (
                 <button
                   onClick={openSetup2fa}
                   className="flex-1 md:flex-initial flex items-center justify-center gap-2 border border-border bg-card text-foreground px-4 sm:px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-muted active:scale-95 transition-all whitespace-nowrap"
