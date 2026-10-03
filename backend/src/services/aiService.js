@@ -9,7 +9,7 @@ import { ensureEarnedAccrualUpToDate } from "../utils/earnedAccrual.js";
 let _groq = null;
 let _model = null;
 function getGroq() {
-  const model = process.env.GROQ_MODEL || "qwen/qwen3.6-27b";
+  const model = process.env.GROQ_MODEL || "qwen/qwen3.8-27b";
   // Re-create client if model changed (e.g. after .env update + nodemon restart)
   if (!_groq || _model !== model) {
     if (!process.env.GROQ_API_KEY) {
