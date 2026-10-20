@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WorkMark</title>
+    <meta name="description" content="Attendance and leave management for modern teams." />
+    <meta property="og:title" content="WorkMark" />
+    <meta property="og:description" content="Attendance and leave management for modern teams." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <meta name="theme-color" content="#f7f7f5" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#07090a" media="(prefers-color-scheme: dark)" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Inter:wght@400..700&family=JetBrains+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap" />
+    <script>
+      (function(){
+        try {
+          var t=localStorage.getItem('wf_theme');
+          var d=window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if(t==='dark'||(t!=='light'&&d))document.documentElement.classList.add('dark')
+        } catch(e){}
+      })();
+    </script>
+    <style>
+      :root {
+        --background: #f7f7f5;
+        --foreground: #101412;
+      }
+      .dark {
+        --background: #07090a;
+        --foreground: #eef2f0;
+      }
+      html, body {
+        margin: 0;
+        padding: 0;
+        background-color: var(--background);
+        color: var(--foreground);
+        min-height: 100vh;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

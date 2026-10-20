@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="WorkMark">
+  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2fd0a0"/><stop offset="1" stop-color="#0b7f60"/></linearGradient></defs>
+  <rect width="64" height="64" rx="16" fill="url(#g)" />
+  <g fill="none" stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round" stroke-width="5.5">
+    <path d="M16 33l11 11L48 21" />
+    <path d="M16 50h22" opacity=".55" />
+  </g>
+</svg>
