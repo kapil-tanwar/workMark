@@ -8,6 +8,7 @@ import { useAuth } from "@/lib/auth-context";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { BrandLockup } from "@/components/BrandMark";
 import { Scene3D } from "@/components/three/Scene3D";
+import { useLocomotiveScroll } from "@/hooks/use-locomotive-scroll";
 
 /* ── Scroll reveal ── */
 function FadeIn({ children, delay = 0, className = "" }) {
@@ -129,6 +130,7 @@ export default function LandingPage() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [scrolled, setScrolled] = useState(false);
+  useLocomotiveScroll();
 
   useEffect(() => {
     if (!loading && user) navigate(user.role === "admin" ? "/admin" : "/dashboard");
@@ -207,7 +209,7 @@ export default function LandingPage() {
 
             {/* Floating glass cards over the 3D scene */}
             <div className="relative hidden lg:block h-[420px]" aria-hidden="true">
-              <div className="absolute right-2 top-2 w-64 glass-card rounded-2xl p-4 animate-float">
+              <div data-scroll data-scroll-speed="0.2" className="absolute right-2 top-2 w-64 glass-card rounded-2xl p-4 animate-float">
                 <div className="flex items-center justify-between mb-3">
                   <span className="eyebrow !text-[10px]">Checked in</span>
                   <span className="live-dot size-1.5 rounded-full bg-success" />
@@ -217,7 +219,7 @@ export default function LandingPage() {
                   <div><p className="text-sm font-semibold">Sarah Chen</p><p className="text-xs text-muted-foreground">08:45 · On time</p></div>
                 </div>
               </div>
-              <div className="absolute left-0 bottom-6 w-60 glass-card rounded-2xl p-4 animate-float [animation-delay:-3s]">
+              <div data-scroll data-scroll-speed="-0.15" className="absolute left-0 bottom-6 w-60 glass-card rounded-2xl p-4 animate-float [animation-delay:-3s]">
                 <div className="flex items-center gap-2 mb-2 text-xs text-muted-foreground"><MapPin className="size-3.5" /> This month</div>
                 <p className="num font-headline text-3xl font-bold tracking-[-0.04em]">96.4<span className="text-lg text-muted-foreground">%</span></p>
                 <p className="text-xs text-muted-foreground mt-1">Team attendance rate</p>
@@ -227,7 +229,7 @@ export default function LandingPage() {
         </section>
 
         {/* ── Product preview ── */}
-        <section className="relative px-5 md:px-12 max-w-7xl mx-auto pb-10 -mt-6">
+        <section data-scroll data-scroll-speed="0.05" className="relative px-5 md:px-12 max-w-7xl mx-auto pb-10 -mt-6">
           <FadeIn><ProductPreview /></FadeIn>
         </section>
 
